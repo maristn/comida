@@ -1,0 +1,14 @@
+.claude/settings.local.json
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+.DS_Store
+build/
+DerivedData/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+
+# XcodeGen generates the project; keep project.yml as source of truth,
+# but the generated .xcodeproj is also committed for convenience here.

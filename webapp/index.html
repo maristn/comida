@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1f2d3a" />
+  <title>Comida</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>Comida</h1>
+  </header>
+
+  <main class="app-main">
+    <section id="shopping-page" class="page active">
+      <div class="list-section">
+        <h2>To Buy</h2>
+        <ul id="to-buy-list" class="item-list"></ul>
+        <p id="to-buy-empty" class="empty-state">Nothing to buy</p>
+      </div>
+
+      <div class="list-section">
+        <h2>Pantry</h2>
+        <ul id="pantry-list" class="item-list"></ul>
+        <p id="pantry-empty" class="empty-state">Pantry is empty</p>
+      </div>
+    </section>
+
+    <section id="recipes-page" class="page">
+      <div class="list-section">
+        <h2>New Recipe</h2>
+        <form id="add-recipe-form" class="recipe-form">
+          <input id="recipe-name-input" type="text" placeholder="Recipe name" autocomplete="off" />
+          <textarea id="recipe-ingredients-input" placeholder="Ingredients, one per line" rows="4"></textarea>
+          <button type="submit" class="recipe-save-button">Save Recipe</button>
+        </form>
+      </div>
+
+      <div class="list-section">
+        <h2>Recipes</h2>
+        <ul id="recipes-list" class="item-list recipe-list"></ul>
+        <p id="recipes-empty" class="empty-state">No recipes yet</p>
+      </div>
+    </section>
+  </main>
+
+  <form id="add-form" class="add-bar active">
+    <input id="new-item-input" type="text" placeholder="I need..." autocomplete="off" />
+    <button type="submit" class="add-button" aria-label="Add">+</button>
+  </form>
+
+  <nav class="tab-bar">
+    <button type="button" class="tab-button active" data-tab="shopping">List</button>
+    <button type="button" class="tab-button" data-tab="recipes">Recipes</button>
+  </nav>
+
+  <script src="app.js"></script>
+</body>
+</html>
