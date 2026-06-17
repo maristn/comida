@@ -324,3 +324,20 @@ body {
 .add-missing-button:active {
   transform: scale(0.97);
 }
+
+.cook-button {
+  margin-top: 4px;
+  align-self: flex-start;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  background: var(--accent-strong);
+  color: var(--bg);
+  cursor: pointer;
+}
+
+.cook-button:active {
+  transform: scale(0.97);
+}

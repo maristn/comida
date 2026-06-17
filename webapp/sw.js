@@ -1,4 +1,4 @@
-const CACHE_NAME = "comida-v1";
+const CACHE_NAME = "comida-v2";
 const ASSETS = ["./index.html", "./styles.css", "./app.js", "./manifest.json"];
 
 self.addEventListener("install", (event) => {

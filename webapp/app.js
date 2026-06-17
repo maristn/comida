@@ -50,10 +50,19 @@ function normalize(name) {
   return name.trim().toLowerCase();
 }
 
-function getPantryNames() {
-  return new Set(
-    items.filter((item) => item.status === "inPantry").map((item) => normalize(item.name))
-  );
+function getPantryItems() {
+  return items.filter((item) => item.status === "inPantry");
+}
+
+// "500g flour" matches ingredient "flour", and vice versa
+function ingredientMatchesPantryItem(ingName, pantryItemName) {
+  const a = normalize(ingName);
+  const b = normalize(pantryItemName);
+  return a === b || b.includes(a) || a.includes(b);
+}
+
+function ingredientInPantry(ingName, pantryItems) {
+  return pantryItems.some((p) => ingredientMatchesPantryItem(ingName, p.name));
 }
 
 function render() {
@@ -131,10 +140,10 @@ addForm.addEventListener("submit", (event) => {
 });
 
 function renderRecipes() {
-  const pantryNames = getPantryNames();
+  const pantryItems = getPantryItems();
 
   const withStatus = recipes.map((recipe) => {
-    const missing = recipe.ingredients.filter((ing) => !pantryNames.has(normalize(ing)));
+    const missing = recipe.ingredients.filter((ing) => !ingredientInPantry(ing, pantryItems));
     return { recipe, missing };
   });
 
@@ -169,7 +178,7 @@ function renderRecipes() {
     for (const ingredient of recipe.ingredients) {
       const item = document.createElement("li");
       item.textContent = ingredient;
-      item.className = pantryNames.has(normalize(ingredient)) ? "have" : "missing";
+      item.className = ingredientInPantry(ingredient, pantryItems) ? "have" : "missing";
       ingredients.appendChild(item);
     }
 
@@ -182,12 +191,29 @@ function renderRecipes() {
       addMissingButton.textContent = "Add missing to shopping list";
       addMissingButton.addEventListener("click", () => addMissingToList(missing));
       li.append(addMissingButton);
+    } else {
+      const cookButton = document.createElement("button");
+      cookButton.type = "button";
+      cookButton.className = "cook-button";
+      cookButton.textContent = "Cooked!";
+      cookButton.addEventListener("click", () => cookRecipe(recipe));
+      li.append(cookButton);
     }
 
     recipesList.appendChild(li);
   }
 
   recipesEmpty.style.display = recipes.length ? "none" : "block";
+}
+
+function cookRecipe(recipe) {
+  const pantryItems = getPantryItems();
+  for (const ing of recipe.ingredients) {
+    const match = pantryItems.find((p) => ingredientMatchesPantryItem(ing, p.name));
+    if (match) match.status = "toBuy";
+  }
+  saveItems(items);
+  render();
 }
 
 function addMissingToList(missingIngredients) {
