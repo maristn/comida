@@ -1,11 +1,11 @@
 :root {
-  --bg: #1f2d3a;
-  --bg-elevated: #28394a;
-  --accent: #6fd6c4;
-  --accent-strong: #3fb89e;
-  --text: #f5f7f8;
-  --text-muted: #9fb0bd;
-  --danger: #e2685c;
+  --bg: #f6f8f4;
+  --bg-elevated: #ffffff;
+  --accent: #4cb87e;
+  --accent-strong: #2d9962;
+  --text: #1a2d22;
+  --text-muted: #8aaa94;
+  --danger: #e05252;
 }
 
 * {
@@ -34,7 +34,8 @@ body {
 .app-header h1 {
   margin: 0;
   font-size: 32px;
-  font-weight: 700;
+  font-weight: 800;
+  color: var(--accent-strong);
 }
 
 .app-main {
@@ -56,9 +57,10 @@ body {
 }
 
 .list-section h2 {
-  font-size: 14px;
+  font-size: 12px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
   color: var(--text-muted);
   margin: 0 4px 8px;
 }
@@ -77,15 +79,16 @@ body {
   align-items: center;
   gap: 12px;
   background: var(--bg-elevated);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
 }
 
 .item-row .toggle {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid var(--text-muted);
+  border: 2px solid #d0dcd5;
   background: transparent;
   flex-shrink: 0;
   display: flex;
@@ -100,7 +103,7 @@ body {
 .item-row.in-pantry .toggle {
   border-color: var(--accent-strong);
   background: var(--accent-strong);
-  color: var(--bg);
+  color: #fff;
 }
 
 .item-row .name {
@@ -115,7 +118,7 @@ body {
 .item-row .delete {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: #ccc;
   font-size: 20px;
   line-height: 1;
   cursor: pointer;
@@ -129,9 +132,10 @@ body {
 .empty-state {
   color: var(--text-muted);
   background: var(--bg-elevated);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 14px 16px;
   margin: 0;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
 }
 
 .add-bar {
@@ -143,9 +147,9 @@ body {
   gap: 12px;
   align-items: center;
   padding: 12px 16px;
-  background: rgba(31, 45, 58, 0.92);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(246, 248, 244, 0.94);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .add-bar.active {
@@ -160,6 +164,7 @@ body {
   font-size: 16px;
   background: var(--bg-elevated);
   color: var(--text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .add-bar input::placeholder {
@@ -176,11 +181,12 @@ body {
   border-radius: 50%;
   border: none;
   background: var(--accent-strong);
-  color: var(--bg);
+  color: #fff;
   font-size: 24px;
   line-height: 1;
   flex-shrink: 0;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(45, 153, 98, 0.35);
 }
 
 .add-button:active {
@@ -195,9 +201,9 @@ body {
   display: flex;
   height: 56px;
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(31, 45, 58, 0.96);
-  backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(246, 248, 244, 0.97);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .tab-button {
@@ -211,7 +217,7 @@ body {
 }
 
 .tab-button.active {
-  color: var(--accent);
+  color: var(--accent-strong);
 }
 
 .recipe-form {
@@ -219,8 +225,9 @@ body {
   flex-direction: column;
   gap: 10px;
   background: var(--bg-elevated);
-  border-radius: 14px;
+  border-radius: 16px;
   padding: 14px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
 }
 
 .recipe-form input,
@@ -252,7 +259,7 @@ body {
   font-size: 16px;
   font-weight: 600;
   background: var(--accent-strong);
-  color: var(--bg);
+  color: #fff;
   cursor: pointer;
 }
 
@@ -292,14 +299,14 @@ body {
 
 .recipe-status {
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 700;
   padding: 4px 10px;
   border-radius: 999px;
   white-space: nowrap;
 }
 
 .recipe-status.ready {
-  color: var(--bg);
+  color: #fff;
   background: var(--accent-strong);
 }
 
@@ -324,6 +331,7 @@ body {
   background: var(--bg-elevated);
   color: var(--text);
   font-family: inherit;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
 .add-pantry-bar input::placeholder {
@@ -344,13 +352,13 @@ body {
 .add-missing-button {
   margin-top: 4px;
   align-self: flex-start;
-  border: 1px solid var(--accent-strong);
+  border: 1.5px solid var(--accent-strong);
   border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
   font-weight: 600;
   background: transparent;
-  color: var(--accent);
+  color: var(--accent-strong);
   cursor: pointer;
 }
 
@@ -367,8 +375,9 @@ body {
   font-size: 13px;
   font-weight: 600;
   background: var(--accent-strong);
-  color: var(--bg);
+  color: #fff;
   cursor: pointer;
+  box-shadow: 0 2px 6px rgba(45, 153, 98, 0.3);
 }
 
 .cook-button:active {

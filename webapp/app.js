@@ -53,6 +53,8 @@ function normalize(name) {
   return name.trim().toLowerCase();
 }
 
+const IGNORED_INGREDIENTS = new Set(["water", "água", "agua"]);
+
 // Parses "3 ovos" → {qty: 3, base: "ovos"}, "leite" → {qty: null, base: "leite"}
 function parseQtyAndBase(name) {
   const n = normalize(name);
@@ -155,6 +157,7 @@ function deleteItem(id) {
 function addItem(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
+  if (IGNORED_INGREDIENTS.has(normalize(trimmed))) return;
   const existing = findMatchingItem(trimmed, items);
   if (existing) {
     if (existing.status === "toBuy") {
@@ -281,6 +284,7 @@ function cookRecipe(recipe) {
 
 function addMissingToList(missingIngredients) {
   for (const ingredient of missingIngredients) {
+    if (IGNORED_INGREDIENTS.has(normalize(ingredient))) continue;
     const existing = findMatchingItem(ingredient, items);
     if (existing) {
       if (existing.status === "toBuy") {
