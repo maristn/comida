@@ -50,6 +50,36 @@ function normalize(name) {
   return name.trim().toLowerCase();
 }
 
+// Parses "3 ovos" → {qty: 3, base: "ovos"}, "leite" → {qty: null, base: "leite"}
+function parseQtyAndBase(name) {
+  const n = normalize(name);
+  const m = n.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
+  if (m) return { qty: parseFloat(m[1].replace(",", ".")), base: m[2] };
+  return { qty: null, base: n };
+}
+
+// Finds an existing item with the same base ingredient name
+function findMatchingItem(name, searchItems) {
+  const { base: newBase } = parseQtyAndBase(name);
+  const normNew = normalize(name);
+  return searchItems.find((item) => {
+    const { base: existBase } = parseQtyAndBase(item.name);
+    const normExist = normalize(item.name);
+    return existBase === newBase || normExist === normNew || normExist === newBase || normNew === existBase;
+  }) || null;
+}
+
+// Returns merged name string if both have numeric qty and same base, else null
+function tryMergeQty(existingName, newName) {
+  const { qty: existQty, base: existBase } = parseQtyAndBase(existingName);
+  const { qty: newQty, base: newBase } = parseQtyAndBase(newName);
+  if (existQty !== null && newQty !== null && existBase === newBase) {
+    const total = existQty + newQty;
+    return `${Number.isInteger(total) ? total : total.toFixed(1)} ${existBase}`;
+  }
+  return null;
+}
+
 function getPantryItems() {
   return items.filter((item) => item.status === "inPantry");
 }
@@ -122,12 +152,19 @@ function deleteItem(id) {
 function addItem(name) {
   const trimmed = name.trim();
   if (!trimmed) return;
-  if (items.some((item) => normalize(item.name) === normalize(trimmed))) return;
-  items.unshift({
-    id: crypto.randomUUID(),
-    name: trimmed,
-    status: "toBuy",
-  });
+  const existing = findMatchingItem(trimmed, items);
+  if (existing) {
+    if (existing.status === "toBuy") {
+      const merged = tryMergeQty(existing.name, trimmed);
+      if (merged) {
+        existing.name = merged;
+        saveItems(items);
+        render();
+      }
+    }
+    return;
+  }
+  items.unshift({ id: crypto.randomUUID(), name: trimmed, status: "toBuy" });
   saveItems(items);
   render();
 }
@@ -217,15 +254,16 @@ function cookRecipe(recipe) {
 }
 
 function addMissingToList(missingIngredients) {
-  const existingNames = new Set(items.map((item) => normalize(item.name)));
   for (const ingredient of missingIngredients) {
-    if (existingNames.has(normalize(ingredient))) continue;
-    items.unshift({
-      id: crypto.randomUUID(),
-      name: ingredient,
-      status: "toBuy",
-    });
-    existingNames.add(normalize(ingredient));
+    const existing = findMatchingItem(ingredient, items);
+    if (existing) {
+      if (existing.status === "toBuy") {
+        const merged = tryMergeQty(existing.name, ingredient);
+        if (merged) existing.name = merged;
+      }
+      continue;
+    }
+    items.unshift({ id: crypto.randomUUID(), name: ingredient, status: "toBuy" });
   }
   saveItems(items);
   render();
