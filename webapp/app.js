@@ -93,7 +93,9 @@ function getPantryItems() {
 function ingredientMatchesPantryItem(ingName, pantryItemName) {
   const a = normalize(ingName);
   const b = normalize(pantryItemName);
-  return a === b || b.includes(a) || a.includes(b);
+  // Only match if pantry item contains ingredient name (e.g. "500g flour" ⊇ "flour")
+  // NOT the reverse — "condensed milk" ⊇ "milk" would be a false positive
+  return a === b || b.includes(a);
 }
 
 function ingredientInPantry(ingName, pantryItems) {

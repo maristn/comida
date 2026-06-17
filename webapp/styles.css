@@ -17,7 +17,7 @@ html, body {
   height: 100%;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", Helvetica, Arial, sans-serif;
+  font-family: 'Roboto', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
 }
 
 body {
@@ -294,7 +294,7 @@ body {
 }
 
 .recipe-card .ingredients li.missing {
-  color: var(--text-muted);
+  color: var(--danger);
 }
 
 .recipe-status {
