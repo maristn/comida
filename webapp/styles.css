@@ -308,6 +308,39 @@ body {
   background: var(--bg);
 }
 
+.add-pantry-bar {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.add-pantry-bar input {
+  flex: 1;
+  border: none;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 15px;
+  background: var(--bg-elevated);
+  color: var(--text);
+  font-family: inherit;
+}
+
+.add-pantry-bar input::placeholder {
+  color: var(--text-muted);
+}
+
+.add-pantry-bar input:focus {
+  outline: 2px solid var(--accent);
+}
+
+.add-button--small {
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
 .add-missing-button {
   margin-top: 4px;
   align-self: flex-start;

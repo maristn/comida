@@ -43,6 +43,9 @@ const addRecipeForm = document.getElementById("add-recipe-form");
 const recipeNameInput = document.getElementById("recipe-name-input");
 const recipeIngredientsInput = document.getElementById("recipe-ingredients-input");
 
+const addPantryForm = document.getElementById("add-pantry-form");
+const newPantryInput = document.getElementById("new-pantry-input");
+
 const tabButtons = document.querySelectorAll(".tab-button");
 const pages = document.querySelectorAll(".page");
 
@@ -174,6 +177,30 @@ addForm.addEventListener("submit", (event) => {
   addItem(newItemInput.value);
   newItemInput.value = "";
   newItemInput.focus();
+});
+
+function addToPantry(name) {
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  const existing = findMatchingItem(trimmed, items);
+  if (existing) {
+    if (existing.status === "toBuy") {
+      existing.status = "inPantry";
+      saveItems(items);
+      render();
+    }
+    return;
+  }
+  items.unshift({ id: crypto.randomUUID(), name: trimmed, status: "inPantry" });
+  saveItems(items);
+  render();
+}
+
+addPantryForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  addToPantry(newPantryInput.value);
+  newPantryInput.value = "";
+  newPantryInput.focus();
 });
 
 function renderRecipes() {
