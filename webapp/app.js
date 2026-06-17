@@ -184,11 +184,10 @@ function addToPantry(name) {
   if (!trimmed) return;
   const existing = findMatchingItem(trimmed, items);
   if (existing) {
-    if (existing.status === "toBuy") {
-      existing.status = "inPantry";
-      saveItems(items);
-      render();
-    }
+    existing.status = "inPantry";
+    existing.name = trimmed;
+    saveItems(items);
+    render();
     return;
   }
   items.unshift({ id: crypto.randomUUID(), name: trimmed, status: "inPantry" });
@@ -338,7 +337,7 @@ tabButtons.forEach((button) => {
   });
 });
 
-if ("serviceWorker" in navigator) {
+if ("serviceWorker" in navigator && location.hostname !== "localhost") {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("sw.js").catch(() => {});
   });
