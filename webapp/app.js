@@ -1,5 +1,14 @@
-const STORAGE_KEY = "comida.items";
-const RECIPES_STORAGE_KEY = "comida.recipes";
+// ── Supabase ───────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+const db = createClient(
+  "https://ckhwneyrpopoijfxxrps.supabase.co",
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNraHduZXlycG9wb2lqZnh4cnBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTYxMzUsImV4cCI6MjA5NzI3MjEzNX0.Qt9jJ9ojrQmEukcs0szv_CpwlVxnd8o8ekQlYU-I3z4"
+);
+
+function dbErr(label) {
+  return ({ error }) => { if (error) console.error(label, error); };
+}
 
 // ── utils ──────────────────────────────────────────────────────────────────
 
@@ -18,24 +27,6 @@ function parseQtyAndBase(text) {
   const m = n.match(/^([\d.,\/]+\s*(?:ml|kg|g|oz|lbs?|cups?|tablespoons?|tbsp|teaspoons?|tsp|colheres?|xícaras?|latas?|cans?)?)\s+(?:(?:of|de)\s+)?(.+)$/i);
   if (m) return { qty: m[1].trim(), base: m[2].trim() };
   return { qty: null, base: n };
-}
-
-// Unit prefix that signals a bad prior migration (e.g. name:"ml of milk" qty:"600")
-const BAD_UNIT_PREFIX_RE = /^(ml|kg|g|oz|lbs?|cups?|tbsp|tsp|colheres?|xícaras?|latas?|cans?)\b/i;
-
-// Migrate old items that had qty embedded in name ("10 eggs" → name:"eggs" qty:"10")
-// Also repairs bad migrations where the unit ended up at the start of the name
-function migrateItem(item) {
-  if (item.qty !== undefined) {
-    if (item.qty && BAD_UNIT_PREFIX_RE.test(item.name)) {
-      const fullText = `${item.qty} ${item.name}`;
-      const parsed = parseQtyAndBase(fullText);
-      if (parsed.qty !== null) return { ...item, name: parsed.base, qty: parsed.qty };
-    }
-    return item;
-  }
-  const { qty, base } = parseQtyAndBase(item.name);
-  return { ...item, name: qty !== null ? base : item.name, qty: qty !== null ? qty : "" };
 }
 
 // Sum two qty strings; returns null if non-numeric. Preserves unit when both match.
@@ -109,56 +100,33 @@ function getIngredientEmoji(name) {
   return "🛒";
 }
 
-// ── storage ────────────────────────────────────────────────────────────────
+// ── state ──────────────────────────────────────────────────────────────────
 
-function loadItems() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw).map(migrateItem) : [];
-  } catch { return []; }
-}
-
-function saveItems(arr) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-}
-
-function loadRecipes() {
-  try {
-    const raw = localStorage.getItem(RECIPES_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch { return []; }
-}
-
-function saveRecipes(arr) {
-  localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(arr));
-}
-
-let items   = loadItems();
-let recipes = loadRecipes();
+let items   = [];
+let recipes = [];
 let editingRecipeId = null;
 const expandedInstructionIds = new Set();
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 
-const toBuyList             = document.getElementById("to-buy-list");
-const pantryList            = document.getElementById("pantry-list");
-const toBuyEmpty            = document.getElementById("to-buy-empty");
-const pantryEmpty           = document.getElementById("pantry-empty");
-const addForm               = document.getElementById("add-form");
-const newItemQtyInput       = document.getElementById("new-item-qty");
-const newItemInput          = document.getElementById("new-item-input");
-const addPantryForm         = document.getElementById("add-pantry-form");
-const newPantryQtyInput     = document.getElementById("new-pantry-qty");
-const newPantryInput        = document.getElementById("new-pantry-input");
-const recipesList           = document.getElementById("recipes-list");
-const recipesEmpty          = document.getElementById("recipes-empty");
-const addRecipeForm         = document.getElementById("add-recipe-form");
-const recipeNameInput       = document.getElementById("recipe-name-input");
-const recipeIngredientsInput = document.getElementById("recipe-ingredients-input");
+const toBuyList               = document.getElementById("to-buy-list");
+const pantryList              = document.getElementById("pantry-list");
+const toBuyEmpty              = document.getElementById("to-buy-empty");
+const pantryEmpty             = document.getElementById("pantry-empty");
+const addForm                 = document.getElementById("add-form");
+const newItemQtyInput         = document.getElementById("new-item-qty");
+const newItemInput            = document.getElementById("new-item-input");
+const addPantryForm           = document.getElementById("add-pantry-form");
+const newPantryQtyInput       = document.getElementById("new-pantry-qty");
+const newPantryInput          = document.getElementById("new-pantry-input");
+const recipesList             = document.getElementById("recipes-list");
+const recipesEmpty            = document.getElementById("recipes-empty");
+const addRecipeForm           = document.getElementById("add-recipe-form");
+const recipeNameInput         = document.getElementById("recipe-name-input");
+const recipeIngredientsInput  = document.getElementById("recipe-ingredients-input");
 const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
-const recipeSubmitBtn       = addRecipeForm.querySelector("button[type=submit]");
-const tabButtons            = document.querySelectorAll(".tab-button");
-const pages                 = document.querySelectorAll(".page");
+const tabButtons              = document.querySelectorAll(".tab-button");
+const pages                   = document.querySelectorAll(".page");
 
 // ── matching ───────────────────────────────────────────────────────────────
 
@@ -403,14 +371,14 @@ function toggleStatus(id) {
   const item = items.find(i => i.id === id);
   if (!item) return;
   item.status = item.status === "toBuy" ? "inPantry" : "toBuy";
-  saveItems(items);
   render();
+  db.from("items").update({ status: item.status }).eq("id", id).then(dbErr("toggleStatus"));
 }
 
 function deleteItem(id) {
   items = items.filter(i => i.id !== id);
-  saveItems(items);
   render();
+  db.from("items").delete().eq("id", id).then(dbErr("deleteItem"));
 }
 
 function addItem(name, qty = "") {
@@ -423,13 +391,18 @@ function addItem(name, qty = "") {
   if (existing) {
     if (existing.status === "toBuy") {
       const merged = sumQty(existing.qty, trimmedQty);
-      if (merged) { existing.qty = merged; saveItems(items); render(); }
+      if (merged) {
+        existing.qty = merged;
+        render();
+        db.from("items").update({ qty: merged }).eq("id", existing.id).then(dbErr("addItem:update"));
+      }
     }
     return;
   }
-  items.unshift({ id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy" });
-  saveItems(items);
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy" };
+  items.unshift(newItem);
   render();
+  db.from("items").insert(newItem).then(dbErr("addItem:insert"));
 }
 
 function addToPantry(name, qty = "") {
@@ -442,38 +415,53 @@ function addToPantry(name, qty = "") {
     existing.status = "inPantry";
     existing.name   = trimmedName;
     existing.qty    = trimmedQty;
-    saveItems(items);
     render();
+    db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).then(dbErr("addToPantry:update"));
     return;
   }
-  items.unshift({ id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry" });
-  saveItems(items);
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry" };
+  items.unshift(newItem);
   render();
+  db.from("items").insert(newItem).then(dbErr("addToPantry:insert"));
 }
 
 function addMissingToList(missingIngredients) {
+  const toInsert = [];
+  const toUpdate = [];
+
   for (const ing of missingIngredients) {
     if (isIgnoredIngredient(ing)) continue;
     const { qty, base: ingName } = parseQtyAndBase(ing);
     const qtyStr = qty !== null ? qty : "";
-
     const existing = findMatchingItem(ingName, items);
     if (existing) {
       if (existing.status === "toBuy" && qtyStr) {
         const merged = sumQty(existing.qty, qtyStr);
-        if (merged) existing.qty = merged;
+        if (merged) {
+          existing.qty = merged;
+          toUpdate.push({ id: existing.id, qty: merged });
+        }
       }
       continue;
     }
-    items.unshift({ id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy" });
+    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy" };
+    items.unshift(newItem);
+    toInsert.push(newItem);
   }
-  saveItems(items);
   render();
+  if (toInsert.length) db.from("items").insert(toInsert).then(dbErr("addMissing:insert"));
+  toUpdate.forEach(({ id, qty }) =>
+    db.from("items").update({ qty }).eq("id", id).then(dbErr("addMissing:update"))
+  );
 }
 
 function cookRecipe(recipe) {
   const pantryItems = getPantryItems();
+  const toUpdate    = [];
+  const toSetToBuy  = [];
+
   for (const ing of recipe.ingredients) {
+    if (isIgnoredIngredient(ing)) continue;
     const { qty: ingQty } = parseQtyAndBase(ing);
     const match = pantryItems.find(p => ingredientMatchesPantryItem(ing, p));
     if (!match) continue;
@@ -481,23 +469,32 @@ function cookRecipe(recipe) {
     if (ingQty !== null && match.qty) {
       const remaining = parseFloat(match.qty) - parseFloat(ingQty);
       if (!isNaN(remaining) && remaining > 0) {
-        match.qty = Number.isInteger(remaining) ? String(remaining) : remaining.toFixed(1);
+        const newQty = Number.isInteger(remaining) ? String(remaining) : remaining.toFixed(1);
+        match.qty = newQty;
+        toUpdate.push({ id: match.id, qty: newQty });
         continue;
       }
     }
     match.status = "toBuy";
+    toSetToBuy.push(match.id);
   }
-  saveItems(items);
   render();
+  toUpdate.forEach(({ id, qty }) =>
+    db.from("items").update({ qty }).eq("id", id).then(dbErr("cook:update"))
+  );
+  toSetToBuy.forEach(id =>
+    db.from("items").update({ status: "toBuy" }).eq("id", id).then(dbErr("cook:setToBuy"))
+  );
 }
 
 function addRecipe(name, ingredientsText, instructions) {
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  recipes.unshift({ id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim() });
-  saveRecipes(recipes);
+  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim() };
+  recipes.unshift(newRecipe);
   renderRecipes();
+  db.from("recipes").insert(newRecipe).then(dbErr("addRecipe"));
 }
 
 function updateRecipe(id, name, ingredientsText, instructions) {
@@ -509,7 +506,7 @@ function updateRecipe(id, name, ingredientsText, instructions) {
   recipe.name         = trimmedName;
   recipe.ingredients  = ingredients;
   recipe.instructions = instructions.trim();
-  saveRecipes(recipes);
+  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim() }).eq("id", id).then(dbErr("updateRecipe"));
 }
 
 function startEditRecipe(id) {
@@ -519,8 +516,8 @@ function startEditRecipe(id) {
 
 function deleteRecipe(id) {
   recipes = recipes.filter(r => r.id !== id);
-  saveRecipes(recipes);
   renderRecipes();
+  db.from("recipes").delete().eq("id", id).then(dbErr("deleteRecipe"));
 }
 
 // ── event listeners ────────────────────────────────────────────────────────
@@ -564,4 +561,18 @@ if ("serviceWorker" in navigator && location.hostname !== "localhost") {
   });
 }
 
-render();
+// ── init ───────────────────────────────────────────────────────────────────
+
+async function init() {
+  const [{ data: itemsData, error: e1 }, { data: recipesData, error: e2 }] = await Promise.all([
+    db.from("items").select("*").order("created_at", { ascending: false }),
+    db.from("recipes").select("*").order("created_at", { ascending: false }),
+  ]);
+  if (e1) console.error("items load:", e1);
+  if (e2) console.error("recipes load:", e2);
+  items   = itemsData   || [];
+  recipes = recipesData || [];
+  render();
+}
+
+init();
