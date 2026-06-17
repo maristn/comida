@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#1f2d3a" />
+  <meta name="theme-color" content="#f6f8f4" />
   <title>Food</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -22,18 +22,23 @@
     <section id="shopping-page" class="page active">
       <div class="list-section">
         <h2>To Buy</h2>
-        <ul id="to-buy-list" class="item-list"></ul>
+        <form id="add-form" class="add-inline">
+          <input id="new-item-qty" type="text" inputmode="decimal" placeholder="Qty" class="qty-input" autocomplete="off" />
+          <input id="new-item-input" type="text" placeholder="I need..." autocomplete="off" />
+          <button type="submit" class="add-button add-button--small" aria-label="Add">+</button>
+        </form>
+        <ul id="to-buy-list" class="item-grid"></ul>
         <p id="to-buy-empty" class="empty-state">Nothing to buy</p>
       </div>
 
       <div class="list-section">
         <h2>Pantry</h2>
-        <form id="add-pantry-form" class="add-pantry-bar">
+        <form id="add-pantry-form" class="add-inline">
           <input id="new-pantry-qty" type="text" inputmode="decimal" placeholder="Qty" class="qty-input" autocomplete="off" />
           <input id="new-pantry-input" type="text" placeholder="Add to pantry..." autocomplete="off" />
           <button type="submit" class="add-button add-button--small" aria-label="Add to pantry">+</button>
         </form>
-        <ul id="pantry-list" class="item-list"></ul>
+        <ul id="pantry-list" class="item-grid"></ul>
         <p id="pantry-empty" class="empty-state">Pantry is empty</p>
       </div>
     </section>
@@ -44,6 +49,7 @@
         <form id="add-recipe-form" class="recipe-form">
           <input id="recipe-name-input" type="text" placeholder="Recipe name" autocomplete="off" />
           <textarea id="recipe-ingredients-input" placeholder="Ingredients, one per line" rows="4"></textarea>
+          <textarea id="recipe-instructions-input" placeholder="Instructions (optional)" rows="4"></textarea>
           <button type="submit" class="recipe-save-button">Save Recipe</button>
         </form>
       </div>
@@ -55,12 +61,6 @@
       </div>
     </section>
   </main>
-
-  <form id="add-form" class="add-bar active">
-    <input id="new-item-qty" type="text" inputmode="decimal" placeholder="Qty" class="qty-input" autocomplete="off" />
-    <input id="new-item-input" type="text" placeholder="I need..." autocomplete="off" />
-    <button type="submit" class="add-button" aria-label="Add">+</button>
-  </form>
 
   <nav class="tab-bar">
     <button type="button" class="tab-button active" data-tab="shopping">List</button>

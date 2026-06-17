@@ -1,11 +1,15 @@
 const STORAGE_KEY = "comida.items";
 const RECIPES_STORAGE_KEY = "comida.recipes";
-const IGNORED_INGREDIENTS = new Set(["water", "água", "agua"]);
 
 // ── utils ──────────────────────────────────────────────────────────────────
 
 function normalize(s) {
   return s.trim().toLowerCase();
+}
+
+function isIgnoredIngredient(name) {
+  const n = normalize(name);
+  return /\bwater\b/.test(n) || /\bágua\b/.test(n) || /\bagua\b/.test(n);
 }
 
 // "3 eggs" → {qty: 3, base: "eggs"} | "eggs" → {qty: null, base: "eggs"}
@@ -16,20 +20,78 @@ function parseQtyAndBase(text) {
   return { qty: null, base: n };
 }
 
-// Migrate old items that had qty in the name ("10 eggs" → name:"eggs" qty:"10")
+// Migrate old items that had qty embedded in name ("10 eggs" → name:"eggs" qty:"10")
 function migrateItem(item) {
   if (item.qty !== undefined) return item;
   const { qty, base } = parseQtyAndBase(item.name);
   return { ...item, name: qty !== null ? base : item.name, qty: qty !== null ? String(qty) : "" };
 }
 
-// Sum two qty strings; returns null if either is empty or non-numeric
+// Sum two qty strings; returns null if non-numeric
 function sumQty(a, b) {
   if (!a || !b) return null;
   const na = parseFloat(a), nb = parseFloat(b);
   if (isNaN(na) || isNaN(nb)) return null;
-  const total = na + nb;
-  return Number.isInteger(total) ? String(total) : total.toFixed(1);
+  const t = na + nb;
+  return Number.isInteger(t) ? String(t) : t.toFixed(1);
+}
+
+// Emoji map: [regex, emoji]
+const EMOJI_MAP = [
+  [/\begg|ovo/,           "🥚"],
+  [/\bmilk\b|leite/,      "🥛"],
+  [/\bflour\b|farinh/,    "🌾"],
+  [/\bbutter\b|manteig/,  "🧈"],
+  [/\bsugar\b|açúcar|acucar/, "🍬"],
+  [/\bsalt\b|sal\b/,      "🧂"],
+  [/\boil\b|óleo|azeite/, "🫙"],
+  [/\bonion\b|cebola/,    "🧅"],
+  [/\bgarlic\b|alho/,     "🧄"],
+  [/\btomato|tomate/,     "🍅"],
+  [/\bpotato|batata/,     "🥔"],
+  [/\bcarrot|cenoura/,    "🥕"],
+  [/\brice\b|arroz/,      "🍚"],
+  [/\bpasta\b|macarrão/,  "🍝"],
+  [/\bchicken\b|frango/,  "🍗"],
+  [/\bbeef\b|carne\b/,    "🥩"],
+  [/\bfish\b|peixe/,      "🐟"],
+  [/\bcheese\b|queijo/,   "🧀"],
+  [/\bcream\b/,           "🥛"],
+  [/\bchocolat/,          "🍫"],
+  [/\bbread\b|pão/,       "🍞"],
+  [/\bapple\b|maçã/,      "🍎"],
+  [/\bbanana/,            "🍌"],
+  [/\blemon\b|limão/,     "🍋"],
+  [/\borange\b|laranja/,  "🍊"],
+  [/\bpepper\b|pimenta/,  "🌶️"],
+  [/\bbean\b|feijão/,     "🫘"],
+  [/\bcoffee\b|café/,     "☕"],
+  [/\btea\b|chá\b/,       "🍵"],
+  [/\bhoney\b|mel\b/,     "🍯"],
+  [/\bcondensed/,         "🥫"],
+  [/\bvanilla\b/,         "🌿"],
+  [/\bcinnamon\b|canela/,  "🍂"],
+  [/\bcorn\b|milho/,      "🌽"],
+  [/\bmushroom\b|cogumelo/, "🍄"],
+  [/\bavocado\b|abacate/,  "🥑"],
+  [/\bcoconut\b|coco\b/,   "🥥"],
+  [/\bstrawberry|morango/, "🍓"],
+  [/\bham\b|presunto/,    "🥓"],
+  [/\bbacon/,             "🥓"],
+  [/\bshrimp\b|camarão/,  "🦐"],
+  [/\bsalmon\b|salmão/,   "🍣"],
+  [/\bpancake/,           "🥞"],
+  [/\bpudim|pudding/,     "🍮"],
+  [/\byogurt|iogurte/,    "🫙"],
+  [/\bsauce\b|molho/,     "🫙"],
+];
+
+function getIngredientEmoji(name) {
+  const n = normalize(name);
+  for (const [pattern, emoji] of EMOJI_MAP) {
+    if (pattern.test(n)) return emoji;
+  }
+  return "🛒";
 }
 
 // ── storage ────────────────────────────────────────────────────────────────
@@ -56,28 +118,32 @@ function saveRecipes(arr) {
   localStorage.setItem(RECIPES_STORAGE_KEY, JSON.stringify(arr));
 }
 
-let items = loadItems();
+let items   = loadItems();
 let recipes = loadRecipes();
+let editingRecipeId = null;
+const expandedInstructionIds = new Set();
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 
-const toBuyList        = document.getElementById("to-buy-list");
-const pantryList       = document.getElementById("pantry-list");
-const toBuyEmpty       = document.getElementById("to-buy-empty");
-const pantryEmpty      = document.getElementById("pantry-empty");
-const addForm          = document.getElementById("add-form");
-const newItemQtyInput  = document.getElementById("new-item-qty");
-const newItemInput     = document.getElementById("new-item-input");
-const addPantryForm    = document.getElementById("add-pantry-form");
-const newPantryQtyInput= document.getElementById("new-pantry-qty");
-const newPantryInput   = document.getElementById("new-pantry-input");
-const recipesList      = document.getElementById("recipes-list");
-const recipesEmpty     = document.getElementById("recipes-empty");
-const addRecipeForm    = document.getElementById("add-recipe-form");
-const recipeNameInput  = document.getElementById("recipe-name-input");
+const toBuyList             = document.getElementById("to-buy-list");
+const pantryList            = document.getElementById("pantry-list");
+const toBuyEmpty            = document.getElementById("to-buy-empty");
+const pantryEmpty           = document.getElementById("pantry-empty");
+const addForm               = document.getElementById("add-form");
+const newItemQtyInput       = document.getElementById("new-item-qty");
+const newItemInput          = document.getElementById("new-item-input");
+const addPantryForm         = document.getElementById("add-pantry-form");
+const newPantryQtyInput     = document.getElementById("new-pantry-qty");
+const newPantryInput        = document.getElementById("new-pantry-input");
+const recipesList           = document.getElementById("recipes-list");
+const recipesEmpty          = document.getElementById("recipes-empty");
+const addRecipeForm         = document.getElementById("add-recipe-form");
+const recipeNameInput       = document.getElementById("recipe-name-input");
 const recipeIngredientsInput = document.getElementById("recipe-ingredients-input");
-const tabButtons       = document.querySelectorAll(".tab-button");
-const pages            = document.querySelectorAll(".page");
+const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
+const recipeSubmitBtn       = addRecipeForm.querySelector("button[type=submit]");
+const tabButtons            = document.querySelectorAll(".tab-button");
+const pages                 = document.querySelectorAll(".page");
 
 // ── matching ───────────────────────────────────────────────────────────────
 
@@ -85,10 +151,9 @@ function getPantryItems() {
   return items.filter(i => i.status === "inPantry");
 }
 
-// Match recipe ingredient text (may contain qty: "3 eggs") against a pantry item
 function ingredientMatchesPantryItem(ingText, pantryItem) {
   const ingBase  = parseQtyAndBase(ingText).base;
-  const itemBase = normalize(pantryItem.name); // name is already base after migration
+  const itemBase = normalize(pantryItem.name);
   return ingBase === itemBase || itemBase.includes(ingBase);
 }
 
@@ -96,7 +161,6 @@ function ingredientInPantry(ingText, pantryItems) {
   return pantryItems.some(p => ingredientMatchesPantryItem(ingText, p));
 }
 
-// Find an existing item by name (exact, post-migration names are already bases)
 function findMatchingItem(name, searchItems) {
   const norm = normalize(name);
   return searchItems.find(i => normalize(i.name) === norm) || null;
@@ -107,48 +171,55 @@ function findMatchingItem(name, searchItems) {
 function render() {
   const toBuy  = items.filter(i => i.status === "toBuy");
   const pantry = items.filter(i => i.status === "inPantry");
-  renderList(toBuyList, toBuy);
-  renderList(pantryList, pantry);
+  renderGrid(toBuyList, toBuy);
+  renderGrid(pantryList, pantry);
   toBuyEmpty.style.display  = toBuy.length  ? "none" : "block";
   pantryEmpty.style.display = pantry.length ? "none" : "block";
   renderRecipes();
 }
 
-function renderList(listEl, listItems) {
-  listEl.innerHTML = "";
+function renderGrid(gridEl, listItems) {
+  gridEl.innerHTML = "";
   for (const item of listItems) {
     const li = document.createElement("li");
-    li.className = "item-row" + (item.status === "inPantry" ? " in-pantry" : "");
-
-    const toggle = document.createElement("button");
-    toggle.className = "toggle";
-    toggle.type = "button";
-    toggle.textContent = item.status === "inPantry" ? "✓" : "";
-    toggle.addEventListener("click", () => toggleStatus(item.id));
-
-    const mid = document.createElement("span");
-    mid.className = "item-mid";
-
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = item.name;
-    mid.appendChild(name);
-
-    if (item.qty) {
-      const badge = document.createElement("span");
-      badge.className = "qty-badge";
-      badge.textContent = item.qty;
-      mid.appendChild(badge);
-    }
+    li.className = "item-card" + (item.status === "inPantry" ? " in-pantry" : "");
+    li.addEventListener("click", e => {
+      if (!e.target.closest(".card-delete")) toggleStatus(item.id);
+    });
 
     const del = document.createElement("button");
-    del.className = "delete";
+    del.className = "card-delete";
     del.type = "button";
     del.textContent = "×";
-    del.addEventListener("click", () => deleteItem(item.id));
+    del.addEventListener("click", e => { e.stopPropagation(); deleteItem(item.id); });
 
-    li.append(toggle, mid, del);
-    listEl.appendChild(li);
+    const icon = document.createElement("span");
+    icon.className = "card-icon";
+    icon.textContent = getIngredientEmoji(item.name);
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "card-name";
+    nameEl.textContent = item.name;
+
+    li.append(del, icon);
+
+    if (item.qty) {
+      const qtyEl = document.createElement("span");
+      qtyEl.className = "card-qty";
+      qtyEl.textContent = item.qty;
+      li.appendChild(qtyEl);
+    }
+
+    li.appendChild(nameEl);
+
+    if (item.status === "inPantry") {
+      const check = document.createElement("span");
+      check.className = "card-check";
+      check.textContent = "✓";
+      li.appendChild(check);
+    }
+
+    gridEl.appendChild(li);
   }
 }
 
@@ -162,10 +233,18 @@ function renderRecipes() {
   withStatus.sort((a, b) => a.missing.length - b.missing.length);
 
   recipesList.innerHTML = "";
+
   for (const { recipe, missing } of withStatus) {
     const li = document.createElement("li");
     li.className = "item-row recipe-card";
 
+    if (editingRecipeId === recipe.id) {
+      li.appendChild(buildRecipeEditForm(recipe));
+      recipesList.appendChild(li);
+      continue;
+    }
+
+    // Header row
     const header = document.createElement("div");
     header.className = "recipe-card-header";
 
@@ -177,14 +256,22 @@ function renderRecipes() {
     status.className = "recipe-status " + (missing.length === 0 ? "ready" : "missing");
     status.textContent = missing.length === 0 ? "Ready to cook" : `${missing.length} missing`;
 
+    const editBtn = document.createElement("button");
+    editBtn.className = "recipe-edit-btn";
+    editBtn.type = "button";
+    editBtn.textContent = "✏️";
+    editBtn.setAttribute("aria-label", "Edit recipe");
+    editBtn.addEventListener("click", () => startEditRecipe(recipe.id));
+
     const del = document.createElement("button");
     del.className = "delete";
     del.type = "button";
     del.textContent = "×";
     del.addEventListener("click", () => deleteRecipe(recipe.id));
 
-    header.append(name, status, del);
+    header.append(name, status, editBtn, del);
 
+    // Ingredients list
     const ingredients = document.createElement("ul");
     ingredients.className = "ingredients";
     for (const ing of recipe.ingredients) {
@@ -196,6 +283,32 @@ function renderRecipes() {
 
     li.append(header, ingredients);
 
+    // Instructions toggle
+    if (recipe.instructions && recipe.instructions.trim()) {
+      const expanded = expandedInstructionIds.has(recipe.id);
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "instructions-toggle";
+      toggle.textContent = expanded ? "▾ Instructions" : "▸ Instructions";
+      toggle.addEventListener("click", () => {
+        if (expandedInstructionIds.has(recipe.id)) {
+          expandedInstructionIds.delete(recipe.id);
+        } else {
+          expandedInstructionIds.add(recipe.id);
+        }
+        renderRecipes();
+      });
+      li.appendChild(toggle);
+
+      if (expanded) {
+        const instr = document.createElement("p");
+        instr.className = "instructions-text";
+        instr.textContent = recipe.instructions;
+        li.appendChild(instr);
+      }
+    }
+
+    // Action buttons
     if (missing.length > 0) {
       const btn = document.createElement("button");
       btn.type = "button";
@@ -218,6 +331,55 @@ function renderRecipes() {
   recipesEmpty.style.display = recipes.length ? "none" : "block";
 }
 
+function buildRecipeEditForm(recipe) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "recipe-edit-wrapper";
+
+  const nameInput = document.createElement("input");
+  nameInput.type = "text";
+  nameInput.value = recipe.name;
+  nameInput.className = "recipe-edit-field";
+  nameInput.placeholder = "Recipe name";
+
+  const ingTextarea = document.createElement("textarea");
+  ingTextarea.value = recipe.ingredients.join("\n");
+  ingTextarea.className = "recipe-edit-field";
+  ingTextarea.placeholder = "Ingredients, one per line";
+  ingTextarea.rows = 4;
+
+  const instrTextarea = document.createElement("textarea");
+  instrTextarea.value = recipe.instructions || "";
+  instrTextarea.className = "recipe-edit-field";
+  instrTextarea.placeholder = "Instructions (optional)";
+  instrTextarea.rows = 4;
+
+  const actions = document.createElement("div");
+  actions.className = "recipe-edit-actions";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "recipe-cancel-button";
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.addEventListener("click", () => {
+    editingRecipeId = null;
+    renderRecipes();
+  });
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "recipe-save-button";
+  saveBtn.textContent = "Save";
+  saveBtn.addEventListener("click", () => {
+    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value);
+    editingRecipeId = null;
+    renderRecipes();
+  });
+
+  actions.append(cancelBtn, saveBtn);
+  wrapper.append(nameInput, ingTextarea, instrTextarea, actions);
+  return wrapper;
+}
+
 // ── mutations ──────────────────────────────────────────────────────────────
 
 function toggleStatus(id) {
@@ -238,7 +400,7 @@ function addItem(name, qty = "") {
   const trimmedName = name.trim();
   const trimmedQty  = qty.trim();
   if (!trimmedName) return;
-  if (IGNORED_INGREDIENTS.has(normalize(trimmedName))) return;
+  if (isIgnoredIngredient(trimmedName)) return;
 
   const existing = findMatchingItem(trimmedName, items);
   if (existing) {
@@ -274,7 +436,7 @@ function addToPantry(name, qty = "") {
 
 function addMissingToList(missingIngredients) {
   for (const ing of missingIngredients) {
-    if (IGNORED_INGREDIENTS.has(normalize(ing))) continue;
+    if (isIgnoredIngredient(ing)) continue;
     const { qty, base: ingName } = parseQtyAndBase(ing);
     const qtyStr = qty !== null ? String(qty) : "";
 
@@ -303,21 +465,38 @@ function cookRecipe(recipe) {
       const remaining = parseFloat(match.qty) - ingQty;
       if (!isNaN(remaining) && remaining > 0) {
         match.qty = Number.isInteger(remaining) ? String(remaining) : remaining.toFixed(1);
-        continue; // stays in pantry with reduced qty
+        continue;
       }
     }
-    match.status = "toBuy"; // fully consumed or can't calculate
+    match.status = "toBuy";
   }
   saveItems(items);
   render();
 }
 
-function addRecipe(name, ingredientsText) {
+function addRecipe(name, ingredientsText, instructions) {
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  recipes.unshift({ id: crypto.randomUUID(), name: trimmedName, ingredients });
+  recipes.unshift({ id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim() });
   saveRecipes(recipes);
+  renderRecipes();
+}
+
+function updateRecipe(id, name, ingredientsText, instructions) {
+  const recipe = recipes.find(r => r.id === id);
+  if (!recipe) return;
+  const trimmedName = name.trim();
+  const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
+  if (!trimmedName || ingredients.length === 0) return;
+  recipe.name         = trimmedName;
+  recipe.ingredients  = ingredients;
+  recipe.instructions = instructions.trim();
+  saveRecipes(recipes);
+}
+
+function startEditRecipe(id) {
+  editingRecipeId = id;
   renderRecipes();
 }
 
@@ -332,7 +511,7 @@ function deleteRecipe(id) {
 addForm.addEventListener("submit", e => {
   e.preventDefault();
   addItem(newItemInput.value, newItemQtyInput.value);
-  newItemInput.value = "";
+  newItemInput.value    = "";
   newItemQtyInput.value = "";
   newItemInput.focus();
 });
@@ -340,16 +519,17 @@ addForm.addEventListener("submit", e => {
 addPantryForm.addEventListener("submit", e => {
   e.preventDefault();
   addToPantry(newPantryInput.value, newPantryQtyInput.value);
-  newPantryInput.value = "";
+  newPantryInput.value    = "";
   newPantryQtyInput.value = "";
   newPantryInput.focus();
 });
 
 addRecipeForm.addEventListener("submit", e => {
   e.preventDefault();
-  addRecipe(recipeNameInput.value, recipeIngredientsInput.value);
-  recipeNameInput.value = "";
-  recipeIngredientsInput.value = "";
+  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value);
+  recipeNameInput.value         = "";
+  recipeIngredientsInput.value  = "";
+  recipeInstructionsInput.value = "";
   recipeNameInput.focus();
 });
 
@@ -358,7 +538,6 @@ tabButtons.forEach(btn => {
     const tab = btn.dataset.tab;
     tabButtons.forEach(b => b.classList.toggle("active", b === btn));
     pages.forEach(p => p.classList.toggle("active", p.id === `${tab}-page`));
-    addForm.classList.toggle("active", tab === "shopping");
   });
 });
 
