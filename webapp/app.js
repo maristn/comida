@@ -12,28 +12,43 @@ function isIgnoredIngredient(name) {
   return /\bwater\b/.test(n) || /\bágua\b/.test(n) || /\bagua\b/.test(n);
 }
 
-// "3 eggs" → {qty: 3, base: "eggs"} | "eggs" → {qty: null, base: "eggs"}
+// "3 eggs" → {qty:"3", base:"eggs"} | "600ml milk" → {qty:"600ml", base:"milk"} | "1 cup of sugar" → {qty:"1 cup", base:"sugar"}
 function parseQtyAndBase(text) {
   const n = normalize(text);
-  const m = n.match(/^(\d+(?:[.,]\d+)?)\s+(.+)$/);
-  if (m) return { qty: parseFloat(m[1].replace(",", ".")), base: m[2] };
+  const m = n.match(/^([\d.,\/]+\s*(?:ml|kg|g|oz|lbs?|cups?|tablespoons?|tbsp|teaspoons?|tsp|colheres?|xícaras?|latas?|cans?)?)\s+(?:(?:of|de)\s+)?(.+)$/i);
+  if (m) return { qty: m[1].trim(), base: m[2].trim() };
   return { qty: null, base: n };
 }
 
+// Unit prefix that signals a bad prior migration (e.g. name:"ml of milk" qty:"600")
+const BAD_UNIT_PREFIX_RE = /^(ml|kg|g|oz|lbs?|cups?|tbsp|tsp|colheres?|xícaras?|latas?|cans?)\b/i;
+
 // Migrate old items that had qty embedded in name ("10 eggs" → name:"eggs" qty:"10")
+// Also repairs bad migrations where the unit ended up at the start of the name
 function migrateItem(item) {
-  if (item.qty !== undefined) return item;
+  if (item.qty !== undefined) {
+    if (item.qty && BAD_UNIT_PREFIX_RE.test(item.name)) {
+      const fullText = `${item.qty} ${item.name}`;
+      const parsed = parseQtyAndBase(fullText);
+      if (parsed.qty !== null) return { ...item, name: parsed.base, qty: parsed.qty };
+    }
+    return item;
+  }
   const { qty, base } = parseQtyAndBase(item.name);
-  return { ...item, name: qty !== null ? base : item.name, qty: qty !== null ? String(qty) : "" };
+  return { ...item, name: qty !== null ? base : item.name, qty: qty !== null ? qty : "" };
 }
 
-// Sum two qty strings; returns null if non-numeric
+// Sum two qty strings; returns null if non-numeric. Preserves unit when both match.
 function sumQty(a, b) {
   if (!a || !b) return null;
   const na = parseFloat(a), nb = parseFloat(b);
   if (isNaN(na) || isNaN(nb)) return null;
   const t = na + nb;
-  return Number.isInteger(t) ? String(t) : t.toFixed(1);
+  const sumStr = Number.isInteger(t) ? String(t) : t.toFixed(1);
+  const unitA = a.replace(/^[\d.,\s]+/, "").trim();
+  const unitB = b.replace(/^[\d.,\s]+/, "").trim();
+  if (unitA && unitA === unitB) return `${sumStr} ${unitA}`;
+  return sumStr;
 }
 
 // Emoji map: [regex, emoji]
@@ -227,7 +242,9 @@ function renderRecipes() {
   const pantryItems = getPantryItems();
 
   const withStatus = recipes.map(recipe => {
-    const missing = recipe.ingredients.filter(ing => !ingredientInPantry(ing, pantryItems));
+    const missing = recipe.ingredients.filter(ing =>
+      !isIgnoredIngredient(ing) && !ingredientInPantry(ing, pantryItems)
+    );
     return { recipe, missing };
   });
   withStatus.sort((a, b) => a.missing.length - b.missing.length);
@@ -277,7 +294,7 @@ function renderRecipes() {
     for (const ing of recipe.ingredients) {
       const ingEl = document.createElement("li");
       ingEl.textContent = ing;
-      ingEl.className = ingredientInPantry(ing, pantryItems) ? "have" : "missing";
+      ingEl.className = (isIgnoredIngredient(ing) || ingredientInPantry(ing, pantryItems)) ? "have" : "missing";
       ingredients.appendChild(ingEl);
     }
 
@@ -438,7 +455,7 @@ function addMissingToList(missingIngredients) {
   for (const ing of missingIngredients) {
     if (isIgnoredIngredient(ing)) continue;
     const { qty, base: ingName } = parseQtyAndBase(ing);
-    const qtyStr = qty !== null ? String(qty) : "";
+    const qtyStr = qty !== null ? qty : "";
 
     const existing = findMatchingItem(ingName, items);
     if (existing) {
@@ -462,7 +479,7 @@ function cookRecipe(recipe) {
     if (!match) continue;
 
     if (ingQty !== null && match.qty) {
-      const remaining = parseFloat(match.qty) - ingQty;
+      const remaining = parseFloat(match.qty) - parseFloat(ingQty);
       if (!isNaN(remaining) && remaining > 0) {
         match.qty = Number.isInteger(remaining) ? String(remaining) : remaining.toFixed(1);
         continue;
