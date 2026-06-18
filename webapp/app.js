@@ -627,8 +627,15 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
-      localStorage.removeItem("gemini_key");
-      suggestResult.textContent = "Invalid key — cleared. Click the button again to re-enter.";
+      const errMsg = data.error?.message || "";
+      if (data.error?.code === 429) {
+        suggestResult.textContent = "⚠️ Quota exceeded on this API key. Try another key from aistudio.google.com.";
+      } else if (data.error?.code === 400 || data.error?.code === 401 || data.error?.code === 403) {
+        localStorage.removeItem("gemini_key");
+        suggestResult.textContent = "❌ Invalid API key — cleared. Click the button again to enter a new one.";
+      } else {
+        suggestResult.textContent = `⚠️ Error: ${errMsg || "No response from Gemini."}`;
+      }
     } else {
       suggestResult.textContent = text;
     }
