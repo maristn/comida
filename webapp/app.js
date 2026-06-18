@@ -137,7 +137,7 @@ function getPantryItems() {
 function ingredientMatchesPantryItem(ingText, pantryItem) {
   const ingBase  = parseQtyAndBase(ingText).base;
   const itemBase = normalize(pantryItem.name);
-  return ingBase === itemBase || itemBase.includes(ingBase);
+  return ingBase === itemBase;
 }
 
 function ingredientInPantry(ingText, pantryItems) {
