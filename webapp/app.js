@@ -21,10 +21,16 @@ function isIgnoredIngredient(name) {
   return /\bwater\b/.test(n) || /\bágua\b/.test(n) || /\bagua\b/.test(n);
 }
 
-// "3 eggs" → {qty:"3", base:"eggs"} | "600ml milk" → {qty:"600ml", base:"milk"} | "1 cup of sugar" → {qty:"1 cup", base:"sugar"}
+// Normalize unicode fractions to ASCII (½ → 1/2, ¼ → 1/4, etc.)
+function normalizeFractions(s) {
+  return s.replace(/½/g,"1/2").replace(/¼/g,"1/4").replace(/¾/g,"3/4")
+          .replace(/⅓/g,"1/3").replace(/⅔/g,"2/3").replace(/⅛/g,"1/8");
+}
+
+// "3 eggs" → {qty:"3", base:"eggs"} | "600ml milk" → {qty:"600ml", base:"milk"} | "2 cloves of garlic" → {qty:"2 cloves", base:"garlic"}
 function parseQtyAndBase(text) {
-  const n = normalize(text);
-  const m = n.match(/^([\d.,\/]+\s*(?:ml|kg|g|oz|lbs?|cups?|tablespoons?|tbsp|teaspoons?|tsp|colheres?|xícaras?|latas?|cans?)?)\s+(?:(?:of|de)\s+)?(.+)$/i);
+  const n = normalizeFractions(normalize(text));
+  const m = n.match(/^([\d.,\/]+\s*(?:ml|kg|g|oz|lbs?|cups?|tablespoons?|tbsp|teaspoons?|tsp|cloves?|bunche?s?|stalks?|heads?|slices?|pieces?|colheres?|xícaras?|latas?|cans?)?)\s+(?:(?:of|de)\s+)?(.+)$/i);
   if (m) return { qty: m[1].trim(), base: m[2].trim() };
   return { qty: null, base: n };
 }
@@ -134,10 +140,12 @@ function getPantryItems() {
   return items.filter(i => i.status === "inPantry");
 }
 
+function stem(s) { return s.replace(/es$/, "").replace(/s$/, ""); }
+
 function ingredientMatchesPantryItem(ingText, pantryItem) {
   const ingBase  = parseQtyAndBase(ingText).base;
   const itemBase = normalize(pantryItem.name);
-  return ingBase === itemBase;
+  return ingBase === itemBase || stem(ingBase) === stem(itemBase);
 }
 
 function ingredientInPantry(ingText, pantryItems) {
