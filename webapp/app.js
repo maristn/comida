@@ -569,6 +569,65 @@ if ("serviceWorker" in navigator && location.hostname !== "localhost") {
   });
 }
 
+// ── AI recipe suggestions ──────────────────────────────────────────────────
+
+const suggestBtn    = document.getElementById("suggest-btn");
+const suggestResult = document.getElementById("suggest-result");
+
+suggestBtn.addEventListener("click", async () => {
+  const pantry = getPantryItems();
+  if (!pantry.length) {
+    suggestResult.textContent   = "Add some items to your pantry first!";
+    suggestResult.style.display = "block";
+    return;
+  }
+
+  let geminiKey = localStorage.getItem("gemini_key") || "";
+  if (!geminiKey) {
+    geminiKey = prompt("Paste your Gemini API key (from aistudio.google.com):");
+    if (!geminiKey) return;
+    localStorage.setItem("gemini_key", geminiKey.trim());
+    geminiKey = geminiKey.trim();
+  }
+
+  suggestBtn.disabled    = true;
+  suggestBtn.textContent = "⏳ Getting ideas...";
+  suggestResult.style.display = "none";
+
+  const ingredientList = pantry
+    .map(i => i.qty ? `${i.qty} ${i.name}` : i.name)
+    .join(", ");
+
+  const prompt = `I have these ingredients in my pantry: ${ingredientList}.
+Suggest 3 simple recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
+
+  try {
+    const res  = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+      {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      }
+    );
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) {
+      localStorage.removeItem("gemini_key");
+      suggestResult.textContent = "Invalid key or no response. Key cleared — try again.";
+    } else {
+      suggestResult.textContent = text;
+    }
+    suggestResult.style.display = "block";
+  } catch {
+    suggestResult.textContent   = "Failed to reach Gemini. Check your connection.";
+    suggestResult.style.display = "block";
+  } finally {
+    suggestBtn.disabled    = false;
+    suggestBtn.textContent = "✨ Suggest from pantry";
+  }
+});
+
 // ── init ───────────────────────────────────────────────────────────────────
 
 async function init() {
