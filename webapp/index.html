@@ -14,10 +14,6 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header class="app-header">
-    <h1>Food</h1>
-  </header>
-
   <main class="app-main">
     <section id="shopping-page" class="page active">
       <div class="list-section">
@@ -73,8 +69,14 @@
   </main>
 
   <nav class="tab-bar">
-    <button type="button" class="tab-button active" data-tab="shopping">List</button>
-    <button type="button" class="tab-button" data-tab="recipes">Recipes</button>
+    <button type="button" class="tab-button active" data-tab="shopping">
+      <span class="tab-icon">🛒</span>
+      List
+    </button>
+    <button type="button" class="tab-button" data-tab="recipes">
+      <span class="tab-icon">🍳</span>
+      Recipes
+    </button>
   </nav>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>

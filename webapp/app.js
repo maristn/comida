@@ -56,8 +56,9 @@ const EMOJI_MAP = [
   [/\bbutter\b|manteig/,  "🧈"],
   [/\bsugar\b|açúcar|acucar/, "🍬"],
   [/\bsalt\b|sal\b/,      "🧂"],
+  [/olive/,               "🫒"],
   [/\boil\b|óleo|azeite/, "🫙"],
-  [/\bonion\b|cebola/,    "🧅"],
+  [/\bonions?\b|cebola/,  "🧅"],
   [/\bgarlic\b|alho/,     "🧄"],
   [/\btomato|tomate/,     "🍅"],
   [/\bpotato|batata/,     "🥔"],
@@ -67,7 +68,7 @@ const EMOJI_MAP = [
   [/\bchicken\b|frango/,  "🍗"],
   [/\bbeef\b|carne\b/,    "🥩"],
   [/\bfish\b|peixe/,      "🐟"],
-  [/\bcheese\b|queijo/,   "🧀"],
+  [/\bcheese\b|queijo|käse|kase/, "🧀"],
   [/\bcream\b/,           "🥛"],
   [/\bchocolat/,          "🍫"],
   [/\bbread\b|pão/,       "🍞"],
@@ -96,6 +97,10 @@ const EMOJI_MAP = [
   [/\bpudim|pudding/,     "🍮"],
   [/\byogurt|iogurte/,    "🫙"],
   [/\bsauce\b|molho/,     "🫙"],
+  [/mayo|maionese|mayonnaise/, "🫙"],
+  [/turmeric|açafrão.da.terra/, "🧂"],
+  [/\bcumin\b|cominho/,  "🧂"],
+  [/ras.?el.?hanout|harissa|za.?atar|sumac|paprik/, "🧂"],
 ];
 
 function getIngredientEmoji(name) {
@@ -178,38 +183,44 @@ function renderGrid(gridEl, listItems) {
       if (!e.target.closest(".card-delete")) toggleStatus(item.id);
     });
 
-    const del = document.createElement("button");
-    del.className = "card-delete";
-    del.type = "button";
-    del.textContent = "×";
-    del.addEventListener("click", e => { e.stopPropagation(); deleteItem(item.id); });
-
+    const iconWrap = document.createElement("div");
+    iconWrap.className = "card-icon-wrap";
     const icon = document.createElement("span");
     icon.className = "card-icon";
     icon.textContent = getIngredientEmoji(item.name);
+    iconWrap.appendChild(icon);
 
+    const body = document.createElement("div");
+    body.className = "card-body";
     const nameEl = document.createElement("span");
     nameEl.className = "card-name";
     nameEl.textContent = item.name;
-
-    li.append(del, icon);
-
+    body.appendChild(nameEl);
     if (item.qty) {
       const qtyEl = document.createElement("span");
       qtyEl.className = "card-qty";
       qtyEl.textContent = item.qty;
-      li.appendChild(qtyEl);
+      body.appendChild(qtyEl);
     }
 
-    li.appendChild(nameEl);
+    const right = document.createElement("div");
+    right.className = "card-right";
 
     if (item.status === "inPantry") {
       const check = document.createElement("span");
       check.className = "card-check";
       check.textContent = "✓";
-      li.appendChild(check);
+      right.appendChild(check);
     }
 
+    const del = document.createElement("button");
+    del.className = "card-delete";
+    del.type = "button";
+    del.textContent = "×";
+    del.addEventListener("click", e => { e.stopPropagation(); deleteItem(item.id); });
+    right.appendChild(del);
+
+    li.append(iconWrap, body, right);
     gridEl.appendChild(li);
   }
 }

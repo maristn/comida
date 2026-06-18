@@ -1,11 +1,16 @@
 :root {
-  --bg: #f6f8f4;
+  --bg: #efefea;
   --bg-elevated: #ffffff;
-  --accent: #4cb87e;
-  --accent-strong: #2d9962;
-  --text: #1a2d22;
-  --text-muted: #8aaa94;
+  --green-dark: #4d6e57;
+  --green-mid: #5d8068;
+  --green-light: #eaf2ec;
+  --accent: #e8704a;
+  --text: #1a2a1e;
+  --text-muted: #8a9e90;
+  --text-on-dark: #ffffff;
   --danger: #e05252;
+  --radius-card: 18px;
+  --radius-sm: 12px;
 }
 
 * { box-sizing: border-box; }
@@ -25,42 +30,33 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.app-header {
-  padding: max(env(safe-area-inset-top), 20px) 20px 8px;
-}
-
-.app-header h1 {
-  margin: 0;
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--accent-strong);
-}
+/* ── Main scroll area ────────────────────────────────────────────────── */
 
 .app-main {
   flex: 1;
   overflow-y: auto;
-  padding: 0 16px 80px;
+  padding: max(env(safe-area-inset-top), 16px) 16px 96px;
 }
 
 .page { display: none; }
 .page.active { display: block; }
 
-.list-section { margin-top: 20px; }
+.list-section { margin-top: 22px; }
 
 .list-section h2 {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.08em;
   color: var(--text-muted);
-  margin: 0 2px 10px;
+  margin: 0 4px 10px;
 }
 
-/* ── Inline add forms ────────────────────────────────────────────── */
+/* ── Inline add forms ────────────────────────────────────────────────── */
 
 .add-inline {
   display: grid;
-  grid-template-columns: 72px 1fr 36px;
+  grid-template-columns: 68px 1fr 40px;
   gap: 8px;
   align-items: center;
   margin-bottom: 12px;
@@ -70,24 +66,21 @@ body {
   width: 100%;
   min-width: 0;
   border: none;
-  border-radius: 12px;
-  padding: 10px 13px;
+  border-radius: var(--radius-sm);
+  padding: 11px 14px;
   font-size: 15px;
   font-family: inherit;
   background: var(--bg-elevated);
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-  box-sizing: border-box;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
 }
 
 .add-inline input::placeholder { color: var(--text-muted); }
-.add-inline input:focus { outline: 2px solid var(--accent); }
+.add-inline input:focus { outline: 2px solid var(--green-mid); }
 
-.qty-input {
-  text-align: center;
-}
+.qty-input { text-align: center; }
 
-/* ── Square ingredient cards ─────────────────────────────────────── */
+/* ── Square ingredient cards ─────────────────────────────────────────── */
 
 .item-grid {
   list-style: none;
@@ -102,7 +95,7 @@ body {
   position: relative;
   aspect-ratio: 1;
   background: var(--bg-elevated);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   box-shadow: 0 1px 4px rgba(0,0,0,0.07);
   display: flex;
   flex-direction: column;
@@ -116,24 +109,21 @@ body {
   overflow: hidden;
 }
 
+.item-card:active { transform: scale(0.95); }
+
 .item-card.in-pantry {
-  background: #eef7f2;
-  border: 1.5px solid #bde5ce;
+  background: var(--green-dark);
+  box-shadow: 0 2px 8px rgba(58,82,64,0.25);
 }
+
+.card-icon-wrap { display: contents; }
 
 .card-icon {
   font-size: 30px;
   line-height: 1.1;
 }
 
-.card-qty {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-strong);
-  background: #e0f3eb;
-  padding: 1px 7px;
-  border-radius: 999px;
-}
+.card-body { display: contents; }
 
 .card-name {
   font-size: 11px;
@@ -148,7 +138,34 @@ body {
   overflow: hidden;
 }
 
-.item-card.in-pantry .card-name { color: var(--text-muted); }
+.item-card.in-pantry .card-name {
+  color: rgba(255,255,255,0.85);
+}
+
+.card-qty {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--green-dark);
+  background: var(--green-light);
+  padding: 1px 7px;
+  border-radius: 999px;
+}
+
+.item-card.in-pantry .card-qty {
+  color: var(--green-dark);
+  background: rgba(255,255,255,0.85);
+}
+
+.card-right { display: contents; }
+
+.card-check {
+  position: absolute;
+  bottom: 5px;
+  right: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+}
 
 .card-delete {
   position: absolute;
@@ -163,58 +180,55 @@ body {
   cursor: pointer;
 }
 
+.item-card.in-pantry .card-delete { color: rgba(255,255,255,0.35); }
 .card-delete:active { color: var(--danger); }
 
-.card-check {
-  position: absolute;
-  bottom: 5px;
-  right: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--accent-strong);
-}
-
-/* ── Add buttons ─────────────────────────────────────────────────── */
+/* ── FAB add button ──────────────────────────────────────────────────── */
 
 .add-button {
   width: 40px;
   height: 40px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-strong);
+  background: var(--accent);
   color: #fff;
   font-size: 22px;
   line-height: 1;
   flex-shrink: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(45, 153, 98, 0.35);
+  box-shadow: 0 3px 10px rgba(232,112,74,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.add-button--small { width: 36px; height: 36px; font-size: 20px; }
-.add-button:active { transform: scale(0.95); }
+.add-button--small { width: 38px; height: 38px; font-size: 20px; }
+.add-button:active { transform: scale(0.93); }
 
-/* ── Empty states ────────────────────────────────────────────────── */
+/* ── Empty states ────────────────────────────────────────────────────── */
 
 .empty-state {
   color: var(--text-muted);
   background: var(--bg-elevated);
-  border-radius: 16px;
-  padding: 14px 16px;
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
   margin: 0;
+  font-size: 14px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.05);
 }
 
-/* ── Tab bar ─────────────────────────────────────────────────────── */
+/* ── Tab bar ─────────────────────────────────────────────────────────── */
 
 .tab-bar {
   position: fixed;
   left: 0; right: 0; bottom: 0;
   display: flex;
-  height: 56px;
+  height: 60px;
   padding-bottom: env(safe-area-inset-bottom);
-  background: rgba(246, 248, 244, 0.97);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(0,0,0,0.06);
+  background: rgba(255,255,255,0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(0,0,0,0.07);
 }
 
 .tab-button {
@@ -222,15 +236,29 @@ body {
   border: none;
   background: transparent;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  transition: color 0.15s;
 }
 
-.tab-button.active { color: var(--accent-strong); }
+.tab-icon {
+  font-size: 22px;
+  line-height: 1;
+}
 
-/* ── Recipe cards (row layout, not square) ───────────────────────── */
+.tab-button.active { color: var(--green-dark); }
+.tab-button.active .tab-icon { filter: none; }
+
+/* ── Recipe list ─────────────────────────────────────────────────────── */
 
 .item-list {
   list-style: none;
@@ -246,9 +274,9 @@ body {
   align-items: center;
   gap: 12px;
   background: var(--bg-elevated);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 14px 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .item-row .delete {
@@ -264,7 +292,7 @@ body {
 
 .item-row .delete:hover { color: var(--danger); }
 
-/* ── Recipe card specifics ───────────────────────────────────────── */
+/* ── Recipe card specifics ───────────────────────────────────────────── */
 
 .recipe-card {
   flex-direction: column;
@@ -287,13 +315,13 @@ body {
 .recipe-status {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 999px;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.recipe-status.ready  { color: #fff; background: var(--accent-strong); }
+.recipe-status.ready   { color: #fff; background: var(--green-dark); }
 .recipe-status.missing { color: var(--text-muted); background: var(--bg); }
 
 .recipe-edit-btn {
@@ -321,7 +349,7 @@ body {
 .instructions-toggle {
   background: none;
   border: none;
-  color: var(--accent-strong);
+  color: var(--green-mid);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
@@ -340,14 +368,14 @@ body {
 
 .add-missing-button {
   align-self: flex-start;
-  border: 1.5px solid var(--accent-strong);
+  border: 1.5px solid var(--green-dark);
   border-radius: 10px;
-  padding: 7px 12px;
+  padding: 7px 14px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   background: transparent;
-  color: var(--accent-strong);
+  color: var(--green-dark);
   cursor: pointer;
 }
 
@@ -357,35 +385,35 @@ body {
   align-self: flex-start;
   border: none;
   border-radius: 10px;
-  padding: 7px 14px;
+  padding: 7px 16px;
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
-  background: var(--accent-strong);
+  background: var(--green-dark);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(45, 153, 98, 0.3);
+  box-shadow: 0 2px 6px rgba(58,82,64,0.3);
 }
 
 .cook-button:active { transform: scale(0.97); }
 
-/* ── Recipe forms ────────────────────────────────────────────────── */
+/* ── Recipe forms ────────────────────────────────────────────────────── */
 
 .recipe-form, .recipe-edit-wrapper {
   display: flex;
   flex-direction: column;
   gap: 10px;
   background: var(--bg-elevated);
-  border-radius: 16px;
-  padding: 14px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+  border-radius: var(--radius-card);
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .recipe-form input,
 .recipe-form textarea,
 .recipe-edit-field {
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 11px 14px;
   font-size: 15px;
   font-family: inherit;
@@ -400,7 +428,7 @@ body {
 
 .recipe-form input:focus,
 .recipe-form textarea:focus,
-.recipe-edit-field:focus { outline: 2px solid var(--accent); }
+.recipe-edit-field:focus { outline: 2px solid var(--green-mid); }
 
 .recipe-edit-actions {
   display: flex;
@@ -410,12 +438,12 @@ body {
 .recipe-save-button {
   flex: 1;
   border: none;
-  border-radius: 12px;
-  padding: 11px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
   font-size: 15px;
   font-weight: 700;
   font-family: inherit;
-  background: var(--accent-strong);
+  background: var(--green-dark);
   color: #fff;
   cursor: pointer;
 }
@@ -423,8 +451,8 @@ body {
 .recipe-cancel-button {
   flex: 1;
   border: 1.5px solid var(--text-muted);
-  border-radius: 12px;
-  padding: 11px;
+  border-radius: var(--radius-sm);
+  padding: 12px;
   font-size: 15px;
   font-weight: 700;
   font-family: inherit;
@@ -436,7 +464,7 @@ body {
 .recipe-save-button:active,
 .recipe-cancel-button:active { transform: scale(0.98); }
 
-/* ── AI suggest ──────────────────────────────────────────────────── */
+/* ── AI suggest ──────────────────────────────────────────────────────── */
 
 .gemini-key-form {
   display: flex;
@@ -448,7 +476,7 @@ body {
   flex: 1;
   min-width: 0;
   border: none;
-  border-radius: 12px;
+  border-radius: var(--radius-sm);
   padding: 11px 14px;
   font-size: 14px;
   font-family: inherit;
@@ -457,7 +485,7 @@ body {
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.gemini-key-form input:focus { outline: 2px solid var(--accent); }
+.gemini-key-form input:focus { outline: 2px solid var(--green-mid); }
 
 .gemini-key-form .recipe-save-button {
   flex: 0 0 auto;
@@ -469,14 +497,14 @@ body {
   width: 100%;
   border: none;
   border-radius: 14px;
-  padding: 14px;
+  padding: 15px;
   font-size: 15px;
   font-weight: 700;
   font-family: inherit;
-  background: var(--accent-strong);
+  background: var(--accent);
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(45,153,98,0.3);
+  box-shadow: 0 3px 10px rgba(232,112,74,0.35);
 }
 
 .suggest-button:active { transform: scale(0.98); }
@@ -486,7 +514,7 @@ body {
   display: none;
   margin-top: 12px;
   background: var(--bg-elevated);
-  border-radius: 16px;
+  border-radius: var(--radius-card);
   padding: 16px;
   font-size: 14px;
   line-height: 1.7;
