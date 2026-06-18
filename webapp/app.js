@@ -571,23 +571,37 @@ if ("serviceWorker" in navigator && location.hostname !== "localhost") {
 
 // ── AI recipe suggestions ──────────────────────────────────────────────────
 
-const suggestBtn    = document.getElementById("suggest-btn");
-const suggestResult = document.getElementById("suggest-result");
+const suggestBtn      = document.getElementById("suggest-btn");
+const suggestResult   = document.getElementById("suggest-result");
+const geminiKeyForm   = document.getElementById("gemini-key-form");
+const geminiKeyInput  = document.getElementById("gemini-key-input");
+const geminiKeySave   = document.getElementById("gemini-key-save");
 
-suggestBtn.addEventListener("click", async () => {
+geminiKeySave.addEventListener("click", () => {
+  const key = geminiKeyInput.value.trim();
+  if (!key) return;
+  localStorage.setItem("gemini_key", key);
+  geminiKeyForm.style.display = "none";
+  geminiKeyInput.value = "";
+  runSuggest(key);
+});
+
+suggestBtn.addEventListener("click", () => {
+  const key = localStorage.getItem("gemini_key");
+  if (!key) {
+    geminiKeyForm.style.display = "flex";
+    geminiKeyInput.focus();
+    return;
+  }
+  runSuggest(key);
+});
+
+async function runSuggest(geminiKey) {
   const pantry = getPantryItems();
   if (!pantry.length) {
     suggestResult.textContent   = "Add some items to your pantry first!";
     suggestResult.style.display = "block";
     return;
-  }
-
-  let geminiKey = localStorage.getItem("gemini_key") || "";
-  if (!geminiKey) {
-    geminiKey = prompt("Paste your Gemini API key (from aistudio.google.com):");
-    if (!geminiKey) return;
-    localStorage.setItem("gemini_key", geminiKey.trim());
-    geminiKey = geminiKey.trim();
   }
 
   suggestBtn.disabled    = true;
@@ -598,7 +612,7 @@ suggestBtn.addEventListener("click", async () => {
     .map(i => i.qty ? `${i.qty} ${i.name}` : i.name)
     .join(", ");
 
-  const prompt = `I have these ingredients in my pantry: ${ingredientList}.
+  const userPrompt = `I have these ingredients in my pantry: ${ingredientList}.
 Suggest 3 simple recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
 
   try {
@@ -607,14 +621,14 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
       {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+        body:    JSON.stringify({ contents: [{ parts: [{ text: userPrompt }] }] }),
       }
     );
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
     if (!text) {
       localStorage.removeItem("gemini_key");
-      suggestResult.textContent = "Invalid key or no response. Key cleared — try again.";
+      suggestResult.textContent = "Invalid key — cleared. Click the button again to re-enter.";
     } else {
       suggestResult.textContent = text;
     }
@@ -626,7 +640,7 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
     suggestBtn.disabled    = false;
     suggestBtn.textContent = "✨ Suggest from pantry";
   }
-});
+}
 
 // ── init ───────────────────────────────────────────────────────────────────
 
