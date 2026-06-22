@@ -323,7 +323,7 @@ function renderRecipes() {
 
       const badge = document.createElement("span");
       badge.className = "recipe-badge " + (missing.length === 0 ? "ready" : "missing");
-      badge.textContent = missing.length === 0 ? "✓" : String(missing.length);
+      badge.textContent = missing.length === 0 ? "✓" : `${missing.length} missing`;
 
       const chevron = document.createElement("span");
       chevron.className = "recipe-chevron";
@@ -337,6 +337,11 @@ function renderRecipes() {
         const detail = document.createElement("div");
         detail.className = "recipe-detail";
 
+        const ingsHeading = document.createElement("p");
+        ingsHeading.className = "recipe-detail-heading";
+        ingsHeading.textContent = "Ingredientes";
+        detail.appendChild(ingsHeading);
+
         const ings = document.createElement("ul");
         ings.className = "ingredients";
         for (const ing of recipe.ingredients) {
@@ -348,10 +353,13 @@ function renderRecipes() {
         detail.appendChild(ings);
 
         if (recipe.instructions && recipe.instructions.trim()) {
+          const instrHeading = document.createElement("p");
+          instrHeading.className = "recipe-detail-heading";
+          instrHeading.textContent = "Preparo";
           const instr = document.createElement("p");
           instr.className = "instructions-text";
           instr.textContent = recipe.instructions;
-          detail.appendChild(instr);
+          detail.append(instrHeading, instr);
         }
 
         const actions = document.createElement("div");
