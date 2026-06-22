@@ -299,10 +299,8 @@ function renderRecipes() {
         continue;
       }
 
-      // Compact header (always visible)
-      const header = document.createElement("div");
-      header.className = "recipe-compact-header";
-      header.addEventListener("click", () => {
+      // Clicking anywhere on the card toggles it
+      li.addEventListener("click", () => {
         if (expandedRecipeIds.has(recipe.id)) {
           expandedRecipeIds.delete(recipe.id);
         } else {
@@ -310,6 +308,10 @@ function renderRecipes() {
         }
         renderRecipes();
       });
+
+      // Compact header (always visible)
+      const header = document.createElement("div");
+      header.className = "recipe-compact-header";
 
       const catEmoji = document.createElement("span");
       catEmoji.className = "recipe-cat-emoji";
@@ -360,14 +362,14 @@ function renderRecipes() {
           addBtn.type = "button";
           addBtn.className = "add-missing-button";
           addBtn.textContent = "Add missing to list";
-          addBtn.addEventListener("click", () => addMissingToList(missing));
+          addBtn.addEventListener("click", e => { e.stopPropagation(); addMissingToList(missing); });
           actions.appendChild(addBtn);
         } else {
           const cookBtn = document.createElement("button");
           cookBtn.type = "button";
           cookBtn.className = "cook-button";
           cookBtn.textContent = "Cooked!";
-          cookBtn.addEventListener("click", () => cookRecipe(recipe));
+          cookBtn.addEventListener("click", e => { e.stopPropagation(); cookRecipe(recipe); });
           actions.appendChild(cookBtn);
         }
 
