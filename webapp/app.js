@@ -111,84 +111,6 @@ function getIngredientEmoji(name) {
   return "🛒";
 }
 
-// ── auth ───────────────────────────────────────────────────────────────────
-
-let currentUser = null;
-
-const authScreen  = document.getElementById("auth-screen");
-const appMain     = document.getElementById("app-main");
-const tabBar      = document.getElementById("tab-bar");
-const authForm    = document.getElementById("auth-form");
-const authEmail   = document.getElementById("auth-email");
-const authPass    = document.getElementById("auth-password");
-const authSubmit  = document.getElementById("auth-submit");
-const authToggle  = document.getElementById("auth-toggle");
-const authError   = document.getElementById("auth-error");
-const logoutBtn   = document.getElementById("logout-btn");
-const userLabel   = document.getElementById("user-label");
-
-let authMode = "signin"; // or "signup"
-
-authToggle.addEventListener("click", () => {
-  authMode = authMode === "signin" ? "signup" : "signin";
-  authSubmit.textContent = authMode === "signin" ? "Sign in" : "Sign up";
-  authToggle.textContent = authMode === "signin" ? "No account? Sign up" : "Have an account? Sign in";
-  authError.style.display = "none";
-});
-
-authForm.addEventListener("submit", async e => {
-  e.preventDefault();
-  authError.style.display = "none";
-  authSubmit.disabled = true;
-  authSubmit.textContent = "…";
-  const email = authEmail.value.trim();
-  const password = authPass.value;
-  const fn = authMode === "signin"
-    ? db.auth.signInWithPassword({ email, password })
-    : db.auth.signUp({ email, password });
-  const { data, error } = await fn;
-  if (error) {
-    authError.textContent = error.message;
-    authError.style.display = "block";
-    authSubmit.disabled = false;
-    authSubmit.textContent = authMode === "signin" ? "Sign in" : "Sign up";
-  } else if (authMode === "signup" && !data.session) {
-    authError.style.display = "block";
-    authError.style.background = "#eaf2ec";
-    authError.style.color = "var(--green-dark)";
-    authError.textContent = "✅ Account created! Check your email to confirm, then sign in.";
-    authSubmit.disabled = false;
-    authSubmit.textContent = "Sign up";
-    authMode = "signin";
-    authSubmit.textContent = "Sign in";
-    authToggle.textContent = "No account? Sign up";
-  }
-});
-
-logoutBtn.addEventListener("click", async () => {
-  if (confirm("Sign out?")) {
-    await db.auth.signOut();
-    window.location.reload();
-  }
-});
-
-db.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user ?? null;
-  if (currentUser) {
-    authScreen.style.display = "none";
-    appMain.style.display = "";
-    tabBar.style.display = "";
-    userLabel.textContent = currentUser.email.split("@")[0];
-    await init();
-  } else {
-    authScreen.style.display = "";
-    appMain.style.display = "none";
-    tabBar.style.display = "none";
-    items = [];
-    recipes = [];
-  }
-});
-
 // ── state ──────────────────────────────────────────────────────────────────
 
 let items   = [];
@@ -469,13 +391,13 @@ function toggleStatus(id) {
   if (!item) return;
   item.status = item.status === "toBuy" ? "inPantry" : "toBuy";
   render();
-  db.from("items").update({ status: item.status }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("toggleStatus"));
+  db.from("items").update({ status: item.status }).eq("id", id).then(dbErr("toggleStatus"));
 }
 
 function deleteItem(id) {
   items = items.filter(i => i.id !== id);
   render();
-  db.from("items").delete().eq("id", id).eq("user_id", currentUser.id).then(dbErr("deleteItem"));
+  db.from("items").delete().eq("id", id).then(dbErr("deleteItem"));
 }
 
 function addItem(name, qty = "") {
@@ -491,12 +413,12 @@ function addItem(name, qty = "") {
       if (merged) {
         existing.qty = merged;
         render();
-        db.from("items").update({ qty: merged }).eq("id", existing.id).eq("user_id", currentUser.id).then(dbErr("addItem:update"));
+        db.from("items").update({ qty: merged }).eq("id", existing.id).then(dbErr("addItem:update"));
       }
     }
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy", user_id: currentUser.id };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy" };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addItem:insert"));
@@ -513,10 +435,10 @@ function addToPantry(name, qty = "") {
     existing.name   = trimmedName;
     existing.qty    = trimmedQty;
     render();
-    db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).eq("user_id", currentUser.id).then(dbErr("addToPantry:update"));
+    db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).then(dbErr("addToPantry:update"));
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry", user_id: currentUser.id };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry" };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addToPantry:insert"));
@@ -541,14 +463,14 @@ function addMissingToList(missingIngredients) {
       }
       continue;
     }
-    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy", user_id: currentUser.id };
+    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy" };
     items.unshift(newItem);
     toInsert.push(newItem);
   }
   render();
   if (toInsert.length) db.from("items").insert(toInsert).then(dbErr("addMissing:insert"));
   toUpdate.forEach(({ id, qty }) =>
-    db.from("items").update({ qty }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("addMissing:update"))
+    db.from("items").update({ qty }).eq("id", id).then(dbErr("addMissing:update"))
   );
 }
 
@@ -577,10 +499,10 @@ function cookRecipe(recipe) {
   }
   render();
   toUpdate.forEach(({ id, qty }) =>
-    db.from("items").update({ qty }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("cook:update"))
+    db.from("items").update({ qty }).eq("id", id).then(dbErr("cook:update"))
   );
   toSetToBuy.forEach(id =>
-    db.from("items").update({ status: "toBuy" }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("cook:setToBuy"))
+    db.from("items").update({ status: "toBuy" }).eq("id", id).then(dbErr("cook:setToBuy"))
   );
 }
 
@@ -646,7 +568,6 @@ addRecipeForm.addEventListener("submit", e => {
 
 tabButtons.forEach(btn => {
   btn.addEventListener("click", () => {
-    if (btn.id === "logout-btn") return;
     const tab = btn.dataset.tab;
     tabButtons.forEach(b => b.classList.toggle("active", b === btn));
     pages.forEach(p => p.classList.toggle("active", p.id === `${tab}-page`));
@@ -752,3 +673,5 @@ async function init() {
   recipes = recipesData || [];
   render();
 }
+
+init();
