@@ -146,12 +146,22 @@ authForm.addEventListener("submit", async e => {
   const fn = authMode === "signin"
     ? db.auth.signInWithPassword({ email, password })
     : db.auth.signUp({ email, password });
-  const { error } = await fn;
+  const { data, error } = await fn;
   if (error) {
     authError.textContent = error.message;
     authError.style.display = "block";
     authSubmit.disabled = false;
     authSubmit.textContent = authMode === "signin" ? "Sign in" : "Sign up";
+  } else if (authMode === "signup" && !data.session) {
+    authError.style.display = "block";
+    authError.style.background = "#eaf2ec";
+    authError.style.color = "var(--green-dark)";
+    authError.textContent = "✅ Account created! Check your email to confirm, then sign in.";
+    authSubmit.disabled = false;
+    authSubmit.textContent = "Sign up";
+    authMode = "signin";
+    authSubmit.textContent = "Sign in";
+    authToggle.textContent = "No account? Sign up";
   }
 });
 
