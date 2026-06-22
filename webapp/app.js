@@ -125,10 +125,8 @@ const pantryList              = document.getElementById("pantry-list");
 const toBuyEmpty              = document.getElementById("to-buy-empty");
 const pantryEmpty             = document.getElementById("pantry-empty");
 const addForm                 = document.getElementById("add-form");
-const newItemQtyInput         = document.getElementById("new-item-qty");
 const newItemInput            = document.getElementById("new-item-input");
 const addPantryForm           = document.getElementById("add-pantry-form");
-const newPantryQtyInput       = document.getElementById("new-pantry-qty");
 const newPantryInput          = document.getElementById("new-pantry-input");
 const recipesList             = document.getElementById("recipes-list");
 const recipesEmpty            = document.getElementById("recipes-empty");
@@ -543,17 +541,17 @@ function deleteRecipe(id) {
 
 addForm.addEventListener("submit", e => {
   e.preventDefault();
-  addItem(newItemInput.value, newItemQtyInput.value);
-  newItemInput.value    = "";
-  newItemQtyInput.value = "";
+  const { base: name, qty } = parseQtyAndBase(newItemInput.value);
+  addItem(name, qty || "");
+  newItemInput.value = "";
   newItemInput.focus();
 });
 
 addPantryForm.addEventListener("submit", e => {
   e.preventDefault();
-  addToPantry(newPantryInput.value, newPantryQtyInput.value);
-  newPantryInput.value    = "";
-  newPantryQtyInput.value = "";
+  const { base: name, qty } = parseQtyAndBase(newPantryInput.value);
+  addToPantry(name, qty || "");
+  newPantryInput.value = "";
   newPantryInput.focus();
 });
 
