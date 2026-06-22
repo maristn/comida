@@ -130,6 +130,45 @@ const EMOJI_MAP = [
   [/leibniz|biscoito/,    "🍪"],
 ];
 
+// ── Emoji picker ───────────────────────────────────────────────────────────
+
+const RECIPE_EMOJIS = [
+  "🥘","🍲","🥗","🍜","🍝","🍛","🍣","🍱","🥙","🌮","🌯","🥪",
+  "🍞","🥐","🥖","🍳","🥞","🧇","🥩","🍗","🍔","🍕","🥫","🫕",
+  "🥣","🧆","🥚","🧈","🥦","🧄","🧅","🍅","🥕","🌽","🥑","🍓",
+  "🍎","🍌","🍋","🍊","🍰","🎂","🧁","🍩","🍪","🍫","🍮","🍯",
+  "☕","🫖","🍵","🥤","🧃","🫙","🥂","🍷","🍸","🍹","🫗","🧋",
+];
+
+function attachEmojiPicker(input) {
+  const picker = document.createElement("div");
+  picker.className = "emoji-picker";
+  document.body.appendChild(picker);
+
+  RECIPE_EMOJIS.forEach(em => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.textContent = em;
+    const choose = e => {
+      e.preventDefault();
+      input.value = em;
+      picker.classList.remove("open");
+    };
+    btn.addEventListener("mousedown", choose);
+    btn.addEventListener("touchstart", choose, { passive: false });
+    picker.appendChild(btn);
+  });
+
+  function reposition() {
+    const r = input.getBoundingClientRect();
+    picker.style.top  = (r.bottom + 6) + "px";
+    picker.style.left = Math.min(r.left, window.innerWidth - 300) + "px";
+  }
+
+  input.addEventListener("focus", () => { reposition(); picker.classList.add("open"); });
+  input.addEventListener("blur",  () => setTimeout(() => picker.classList.remove("open"), 200));
+}
+
 function getIngredientEmoji(name) {
   const n = normalize(name);
   for (const [pattern, emoji] of EMOJI_MAP) {
@@ -169,6 +208,7 @@ const addRecipeForm           = document.getElementById("add-recipe-form");
 const recipeNameInput         = document.getElementById("recipe-name-input");
 const recipeCategoryInput     = document.getElementById("recipe-category-input");
 const recipeEmojiInput        = document.getElementById("recipe-emoji-input");
+attachEmojiPicker(recipeEmojiInput);
 const recipeIngredientsInput  = document.getElementById("recipe-ingredients-input");
 const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
 const tabButtons              = document.querySelectorAll(".tab-button");
@@ -462,6 +502,7 @@ function buildRecipeEditForm(recipe) {
   emojiInput.className = "recipe-edit-field recipe-emoji-field";
   emojiInput.placeholder = "✨";
   emojiInput.maxLength = 4;
+  attachEmojiPicker(emojiInput);
 
   const ingTextarea = document.createElement("textarea");
   ingTextarea.value = recipe.ingredients.join("\n");
