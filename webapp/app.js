@@ -256,10 +256,29 @@ function normalizeIngredient(s) {
   return s;
 }
 
+function extractUnit(qtyStr) {
+  return (qtyStr || "").replace(/^[\d.,\/\s]+/, "").trim().toLowerCase();
+}
+
 function ingredientMatchesPantryItem(ingText, pantryItem) {
-  const ingBase  = normalizeIngredient(parseQtyAndBase(ingText).base);
+  const { qty: ingQty, base: ingBaseRaw } = parseQtyAndBase(ingText);
+  const ingBase  = normalizeIngredient(ingBaseRaw);
   const itemBase = normalizeIngredient(normalize(pantryItem.name));
-  return ingBase === itemBase || stem(ingBase) === stem(itemBase);
+  const namesMatch = ingBase === itemBase || stem(ingBase) === stem(itemBase);
+  if (!namesMatch) return false;
+
+  // If both have a numeric qty with the same unit, check sufficiency
+  if (ingQty && pantryItem.qty) {
+    const ingNum   = parseFloat(ingQty);
+    const pantryNum = parseFloat(pantryItem.qty);
+    const ingUnit   = extractUnit(ingQty);
+    const pantryUnit = extractUnit(pantryItem.qty);
+    if (!isNaN(ingNum) && !isNaN(pantryNum) && ingUnit === pantryUnit) {
+      return pantryNum >= ingNum;
+    }
+  }
+
+  return true;
 }
 
 function ingredientInPantry(ingText, pantryItems) {
