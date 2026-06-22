@@ -953,9 +953,13 @@ Suggest 3 simple ${focus}recipes I can make. For each recipe include: name, ingr
     suggestResult.appendChild(textEl);
 
     // Show grounding sources if available
-    const chunks = lastData?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const meta = lastData?.candidates?.[0]?.groundingMetadata;
+    console.log("grounding metadata:", JSON.stringify(meta));
+    const chunks = meta?.groundingChunks || [];
     const sources = chunks.map(c => c.web).filter(Boolean);
-    if (sources.length) {
+    // Fallback: use webSearchQueries as Google Search links
+    const queries = !sources.length ? (meta?.webSearchQueries || []) : [];
+    if (sources.length || queries.length) {
       const sourcesEl = document.createElement("div");
       sourcesEl.className = "suggest-sources";
       const label = document.createElement("p");
@@ -969,6 +973,15 @@ Suggest 3 simple ${focus}recipes I can make. For each recipe include: name, ingr
         a.rel = "noopener noreferrer";
         a.className = "suggest-source-link";
         a.textContent = title || uri;
+        sourcesEl.appendChild(a);
+      });
+      queries.forEach(q => {
+        const a = document.createElement("a");
+        a.href = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "suggest-source-link";
+        a.textContent = `🔍 ${q}`;
         sourcesEl.appendChild(a);
       });
       suggestResult.appendChild(sourcesEl);
