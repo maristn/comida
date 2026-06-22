@@ -242,9 +242,21 @@ function getPantryItems() {
 
 function stem(s) { return s.replace(/es$/, "").replace(/s$/, ""); }
 
+const INGREDIENT_ALIASES = [
+  [/\begg yolks?\b/, "eggs"],
+  [/\byolks?\b/,     "eggs"],
+];
+
+function normalizeIngredient(s) {
+  for (const [pattern, replacement] of INGREDIENT_ALIASES) {
+    if (pattern.test(s)) return replacement;
+  }
+  return s;
+}
+
 function ingredientMatchesPantryItem(ingText, pantryItem) {
-  const ingBase  = parseQtyAndBase(ingText).base;
-  const itemBase = normalize(pantryItem.name);
+  const ingBase  = normalizeIngredient(parseQtyAndBase(ingText).base);
+  const itemBase = normalizeIngredient(normalize(pantryItem.name));
   return ingBase === itemBase || stem(ingBase) === stem(itemBase);
 }
 
