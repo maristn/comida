@@ -14,7 +14,23 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="app-main">
+  <!-- Auth screen -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-card">
+      <div class="auth-logo">🍽️</div>
+      <h1 class="auth-title">Food</h1>
+      <p class="auth-subtitle">Sign in to access your lists</p>
+      <div id="auth-error" class="auth-error" style="display:none"></div>
+      <form id="auth-form" class="auth-form">
+        <input id="auth-email" type="email" placeholder="Email" autocomplete="email" required />
+        <input id="auth-password" type="password" placeholder="Password" autocomplete="current-password" required />
+        <button type="submit" id="auth-submit" class="auth-submit">Sign in</button>
+      </form>
+      <button id="auth-toggle" class="auth-toggle">No account? Sign up</button>
+    </div>
+  </div>
+
+  <main id="app-main" class="app-main" style="display:none">
     <section id="shopping-page" class="page active">
       <div class="list-section">
         <h2>To Buy</h2>
@@ -68,7 +84,7 @@
     </section>
   </main>
 
-  <nav class="tab-bar">
+  <nav id="tab-bar" class="tab-bar" style="display:none">
     <button type="button" class="tab-button active" data-tab="shopping">
       <span class="tab-icon">🛒</span>
       List
@@ -76,6 +92,10 @@
     <button type="button" class="tab-button" data-tab="recipes">
       <span class="tab-icon">🍳</span>
       Recipes
+    </button>
+    <button type="button" class="tab-button" id="logout-btn" data-tab="">
+      <span class="tab-icon">👤</span>
+      <span id="user-label">Account</span>
     </button>
   </nav>
 

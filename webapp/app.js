@@ -111,6 +111,71 @@ function getIngredientEmoji(name) {
   return "🛒";
 }
 
+// ── auth ───────────────────────────────────────────────────────────────────
+
+let currentUser = null;
+
+const authScreen  = document.getElementById("auth-screen");
+const appMain     = document.getElementById("app-main");
+const tabBar      = document.getElementById("tab-bar");
+const authForm    = document.getElementById("auth-form");
+const authEmail   = document.getElementById("auth-email");
+const authPass    = document.getElementById("auth-password");
+const authSubmit  = document.getElementById("auth-submit");
+const authToggle  = document.getElementById("auth-toggle");
+const authError   = document.getElementById("auth-error");
+const logoutBtn   = document.getElementById("logout-btn");
+const userLabel   = document.getElementById("user-label");
+
+let authMode = "signin"; // or "signup"
+
+authToggle.addEventListener("click", () => {
+  authMode = authMode === "signin" ? "signup" : "signin";
+  authSubmit.textContent = authMode === "signin" ? "Sign in" : "Sign up";
+  authToggle.textContent = authMode === "signin" ? "No account? Sign up" : "Have an account? Sign in";
+  authError.style.display = "none";
+});
+
+authForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  authError.style.display = "none";
+  authSubmit.disabled = true;
+  authSubmit.textContent = "…";
+  const email = authEmail.value.trim();
+  const password = authPass.value;
+  const fn = authMode === "signin"
+    ? db.auth.signInWithPassword({ email, password })
+    : db.auth.signUp({ email, password });
+  const { error } = await fn;
+  if (error) {
+    authError.textContent = error.message;
+    authError.style.display = "block";
+    authSubmit.disabled = false;
+    authSubmit.textContent = authMode === "signin" ? "Sign in" : "Sign up";
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await db.auth.signOut();
+});
+
+db.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user ?? null;
+  if (currentUser) {
+    authScreen.style.display = "none";
+    appMain.style.display = "";
+    tabBar.style.display = "";
+    userLabel.textContent = currentUser.email.split("@")[0];
+    await init();
+  } else {
+    authScreen.style.display = "";
+    appMain.style.display = "none";
+    tabBar.style.display = "none";
+    items = [];
+    recipes = [];
+  }
+});
+
 // ── state ──────────────────────────────────────────────────────────────────
 
 let items   = [];
@@ -391,13 +456,13 @@ function toggleStatus(id) {
   if (!item) return;
   item.status = item.status === "toBuy" ? "inPantry" : "toBuy";
   render();
-  db.from("items").update({ status: item.status }).eq("id", id).then(dbErr("toggleStatus"));
+  db.from("items").update({ status: item.status }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("toggleStatus"));
 }
 
 function deleteItem(id) {
   items = items.filter(i => i.id !== id);
   render();
-  db.from("items").delete().eq("id", id).then(dbErr("deleteItem"));
+  db.from("items").delete().eq("id", id).eq("user_id", currentUser.id).then(dbErr("deleteItem"));
 }
 
 function addItem(name, qty = "") {
@@ -413,12 +478,12 @@ function addItem(name, qty = "") {
       if (merged) {
         existing.qty = merged;
         render();
-        db.from("items").update({ qty: merged }).eq("id", existing.id).then(dbErr("addItem:update"));
+        db.from("items").update({ qty: merged }).eq("id", existing.id).eq("user_id", currentUser.id).then(dbErr("addItem:update"));
       }
     }
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy" };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy", user_id: currentUser.id };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addItem:insert"));
@@ -435,10 +500,10 @@ function addToPantry(name, qty = "") {
     existing.name   = trimmedName;
     existing.qty    = trimmedQty;
     render();
-    db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).then(dbErr("addToPantry:update"));
+    db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).eq("user_id", currentUser.id).then(dbErr("addToPantry:update"));
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry" };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry", user_id: currentUser.id };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addToPantry:insert"));
@@ -463,14 +528,14 @@ function addMissingToList(missingIngredients) {
       }
       continue;
     }
-    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy" };
+    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy", user_id: currentUser.id };
     items.unshift(newItem);
     toInsert.push(newItem);
   }
   render();
   if (toInsert.length) db.from("items").insert(toInsert).then(dbErr("addMissing:insert"));
   toUpdate.forEach(({ id, qty }) =>
-    db.from("items").update({ qty }).eq("id", id).then(dbErr("addMissing:update"))
+    db.from("items").update({ qty }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("addMissing:update"))
   );
 }
 
@@ -499,10 +564,10 @@ function cookRecipe(recipe) {
   }
   render();
   toUpdate.forEach(({ id, qty }) =>
-    db.from("items").update({ qty }).eq("id", id).then(dbErr("cook:update"))
+    db.from("items").update({ qty }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("cook:update"))
   );
   toSetToBuy.forEach(id =>
-    db.from("items").update({ status: "toBuy" }).eq("id", id).then(dbErr("cook:setToBuy"))
+    db.from("items").update({ status: "toBuy" }).eq("id", id).eq("user_id", currentUser.id).then(dbErr("cook:setToBuy"))
   );
 }
 
@@ -664,7 +729,7 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
 
 async function init() {
   const [{ data: itemsData, error: e1 }, { data: recipesData, error: e2 }] = await Promise.all([
-    db.from("items").select("*").order("created_at", { ascending: false }),
+    db.from("items").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
     db.from("recipes").select("*").order("created_at", { ascending: false }),
   ]);
   if (e1) console.error("items load:", e1);
@@ -673,5 +738,3 @@ async function init() {
   recipes = recipesData || [];
   render();
 }
-
-init();
