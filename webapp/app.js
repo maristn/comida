@@ -168,6 +168,7 @@ const recipesEmpty            = document.getElementById("recipes-empty");
 const addRecipeForm           = document.getElementById("add-recipe-form");
 const recipeNameInput         = document.getElementById("recipe-name-input");
 const recipeCategoryInput     = document.getElementById("recipe-category-input");
+const recipeEmojiInput        = document.getElementById("recipe-emoji-input");
 const recipeIngredientsInput  = document.getElementById("recipe-ingredients-input");
 const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
 const tabButtons              = document.querySelectorAll(".tab-button");
@@ -259,6 +260,28 @@ function renderGrid(gridEl, listItems) {
   }
 }
 
+function buildInstructions(text) {
+  const div = document.createElement("div");
+  div.className = "instructions-text";
+  text.split("\n").forEach(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    const p = document.createElement("p");
+    p.className = "instructions-line";
+    const m = trimmed.match(/^(\d+)\.\s*(.*)/);
+    if (m) {
+      const num = document.createElement("span");
+      num.className = "step-number";
+      num.textContent = m[1];
+      p.append(num, " " + m[2]);
+    } else {
+      p.textContent = trimmed;
+    }
+    div.appendChild(p);
+  });
+  return div;
+}
+
 function renderRecipes() {
   const pantryItems = getPantryItems();
 
@@ -315,7 +338,7 @@ function renderRecipes() {
 
       const catEmoji = document.createElement("span");
       catEmoji.className = "recipe-cat-emoji";
-      catEmoji.textContent = emoji;
+      catEmoji.textContent = recipe.emoji || emoji;
 
       const nameEl = document.createElement("span");
       nameEl.className = "recipe-compact-name";
@@ -339,7 +362,7 @@ function renderRecipes() {
 
         const ingsHeading = document.createElement("p");
         ingsHeading.className = "recipe-detail-heading";
-        ingsHeading.textContent = "Ingredientes";
+        ingsHeading.textContent = "Ingredients";
         detail.appendChild(ingsHeading);
 
         const ings = document.createElement("ul");
@@ -355,11 +378,10 @@ function renderRecipes() {
         if (recipe.instructions && recipe.instructions.trim()) {
           const instrHeading = document.createElement("p");
           instrHeading.className = "recipe-detail-heading";
-          instrHeading.textContent = "Preparo";
-          const instr = document.createElement("p");
-          instr.className = "instructions-text";
-          instr.textContent = recipe.instructions;
-          detail.append(instrHeading, instr);
+          instrHeading.textContent = "Instructions";
+          detail.appendChild(instrHeading);
+          const instrEl = buildInstructions(recipe.instructions);
+          detail.appendChild(instrEl);
         }
 
         const actions = document.createElement("div");
@@ -434,6 +456,13 @@ function buildRecipeEditForm(recipe) {
   if (!recipe.category) noneOpt.selected = true;
   categorySelect.insertBefore(noneOpt, categorySelect.firstChild);
 
+  const emojiInput = document.createElement("input");
+  emojiInput.type = "text";
+  emojiInput.value = recipe.emoji || "";
+  emojiInput.className = "recipe-edit-field recipe-emoji-field";
+  emojiInput.placeholder = "✨";
+  emojiInput.maxLength = 4;
+
   const ingTextarea = document.createElement("textarea");
   ingTextarea.value = recipe.ingredients.join("\n");
   ingTextarea.className = "recipe-edit-field";
@@ -463,13 +492,17 @@ function buildRecipeEditForm(recipe) {
   saveBtn.className = "recipe-save-button";
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", () => {
-    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value, categorySelect.value);
+    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value, categorySelect.value, emojiInput.value);
     editingRecipeId = null;
     renderRecipes();
   });
 
+  const formRow = document.createElement("div");
+  formRow.className = "recipe-form-row";
+  formRow.append(categorySelect, emojiInput);
+
   actions.append(cancelBtn, saveBtn);
-  wrapper.append(nameInput, categorySelect, ingTextarea, instrTextarea, actions);
+  wrapper.append(nameInput, formRow, ingTextarea, instrTextarea, actions);
   return wrapper;
 }
 
@@ -600,17 +633,17 @@ function cookRecipe(recipe) {
   );
 }
 
-function addRecipe(name, ingredientsText, instructions, category = "") {
+function addRecipe(name, ingredientsText, instructions, category = "", emoji = "") {
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category };
+  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim() };
   recipes.unshift(newRecipe);
   renderRecipes();
   db.from("recipes").insert(newRecipe).then(dbErr("addRecipe"));
 }
 
-function updateRecipe(id, name, ingredientsText, instructions, category = "") {
+function updateRecipe(id, name, ingredientsText, instructions, category = "", emoji = "") {
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
   const trimmedName = name.trim();
@@ -620,7 +653,8 @@ function updateRecipe(id, name, ingredientsText, instructions, category = "") {
   recipe.ingredients  = ingredients;
   recipe.instructions = instructions.trim();
   recipe.category     = category;
-  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim(), category }).eq("id", id).then(dbErr("updateRecipe"));
+  recipe.emoji        = emoji.trim();
+  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim() }).eq("id", id).then(dbErr("updateRecipe"));
 }
 
 function startEditRecipe(id) {
@@ -654,9 +688,10 @@ addPantryForm.addEventListener("submit", e => {
 
 addRecipeForm.addEventListener("submit", e => {
   e.preventDefault();
-  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value);
+  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value, recipeEmojiInput.value);
   recipeNameInput.value         = "";
   recipeCategoryInput.value     = "";
+  recipeEmojiInput.value        = "";
   recipeIngredientsInput.value  = "";
   recipeInstructionsInput.value = "";
   recipeNameInput.focus();

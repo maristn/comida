@@ -9,7 +9,7 @@
   <title>Food</title>
   <link rel="manifest" href="manifest.json" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
   <link rel="stylesheet" href="styles.css?v=2" />
 </head>
@@ -42,13 +42,16 @@
         <h2>New Recipe</h2>
         <form id="add-recipe-form" class="recipe-form">
           <input id="recipe-name-input" type="text" placeholder="Recipe name" autocomplete="off" />
-          <select id="recipe-category-input" class="recipe-edit-field">
+          <div class="recipe-form-row">
+            <select id="recipe-category-input" class="recipe-edit-field">
             <option value="">No category</option>
             <option value="breakfast">🍳 Breakfast</option>
             <option value="meal">🍽️ Meal</option>
             <option value="snack">🥨 Snack</option>
             <option value="dessert">🍰 Dessert</option>
           </select>
+            <input id="recipe-emoji-input" type="text" placeholder="✨" maxlength="4" class="recipe-edit-field recipe-emoji-field" autocomplete="off" />
+          </div>
           <textarea id="recipe-ingredients-input" placeholder="Ingredients, one per line" rows="4"></textarea>
           <textarea id="recipe-instructions-input" placeholder="Instructions (optional)" rows="4"></textarea>
           <button type="submit" class="recipe-save-button">Save Recipe</button>
