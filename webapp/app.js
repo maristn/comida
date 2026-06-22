@@ -739,7 +739,7 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
 
 async function init() {
   const [{ data: itemsData, error: e1 }, { data: recipesData, error: e2 }] = await Promise.all([
-    db.from("items").select("*").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
+    db.from("items").select("*").order("created_at", { ascending: false }),
     db.from("recipes").select("*").order("created_at", { ascending: false }),
   ]);
   if (e1) console.error("items load:", e1);
