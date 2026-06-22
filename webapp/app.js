@@ -70,7 +70,7 @@ function sumQty(a, b) {
 
 // Emoji map: [regex, emoji]
 const EMOJI_MAP = [
-  [/\begg|ovo/,           "🥚"],
+  [/\begg|yolk|ovo/,      "🥚"],
   [/\bmilk\b|leite/,      "🥛"],
   [/\bflour\b|farinh/,    "🌾"],
   [/\bbutter\b|manteig/,  "🧈"],
