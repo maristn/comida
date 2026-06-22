@@ -626,6 +626,18 @@ suggestBtn.addEventListener("click", async () => {
   runSuggest(key);
 });
 
+async function callGemini(geminiKey, model, prompt) {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
+    {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+    }
+  );
+  return res.json();
+}
+
 async function runSuggest(geminiKey) {
   const pantry = getPantryItems();
   if (!pantry.length) {
@@ -645,30 +657,30 @@ async function runSuggest(geminiKey) {
   const userPrompt = `I have these ingredients in my pantry: ${ingredientList}.
 Suggest 3 simple recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
 
+  const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+
   try {
-    const res  = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`,
-      {
-        method:  "POST",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ contents: [{ parts: [{ text: userPrompt }] }] }),
-      }
-    );
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      const errMsg = data.error?.message || "";
-      if (data.error?.code === 429) {
-        suggestResult.textContent = "⚠️ Quota exceeded on this API key. Try another key from aistudio.google.com.";
-      } else if (data.error?.code === 400 || data.error?.code === 401 || data.error?.code === 403) {
+    let text = null;
+    let lastError = "";
+
+    for (const model of models) {
+      const data = await callGemini(geminiKey, model, userPrompt);
+      text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (text) break;
+
+      const code = data.error?.code;
+      lastError  = data.error?.message || "";
+
+      if (code === 400 || code === 401 || code === 403) {
         clearGeminiKey();
-        suggestResult.textContent = "❌ Invalid API key — cleared. Click the button again to enter a new one.";
-      } else {
-        suggestResult.textContent = `⚠️ Error: ${errMsg || "No response from Gemini."}`;
+        suggestResult.textContent   = "❌ Invalid API key — cleared. Click the button again to enter a new one.";
+        suggestResult.style.display = "block";
+        return;
       }
-    } else {
-      suggestResult.textContent = text;
+      // 429 (quota) or 503 (overload) → try next model
     }
+
+    suggestResult.textContent   = text || `⚠️ Error: ${lastError || "No response from Gemini."}`;
     suggestResult.style.display = "block";
   } catch {
     suggestResult.textContent   = "Failed to reach Gemini. Check your connection.";
