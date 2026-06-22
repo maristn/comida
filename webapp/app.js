@@ -738,13 +738,18 @@ addRecipeForm.addEventListener("submit", e => {
   recipeNameInput.focus();
 });
 
+function switchTab(tab) {
+  tabButtons.forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+  pages.forEach(p => p.classList.toggle("active", p.id === `${tab}-page`));
+  localStorage.setItem("active_tab", tab);
+}
+
 tabButtons.forEach(btn => {
-  btn.addEventListener("click", () => {
-    const tab = btn.dataset.tab;
-    tabButtons.forEach(b => b.classList.toggle("active", b === btn));
-    pages.forEach(p => p.classList.toggle("active", p.id === `${tab}-page`));
-  });
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
+
+const savedTab = localStorage.getItem("active_tab");
+if (savedTab) switchTab(savedTab);
 
 if ("serviceWorker" in navigator && location.hostname !== "localhost") {
   window.addEventListener("load", () => {
