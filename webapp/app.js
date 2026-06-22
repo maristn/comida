@@ -586,17 +586,38 @@ const geminiKeyForm   = document.getElementById("gemini-key-form");
 const geminiKeyInput  = document.getElementById("gemini-key-input");
 const geminiKeySave   = document.getElementById("gemini-key-save");
 
-geminiKeySave.addEventListener("click", () => {
+async function loadGeminiKey() {
+  const cached = localStorage.getItem("gemini_key");
+  if (cached) return cached;
+  const { data } = await db.from("settings").select("value").eq("key", "gemini_key").maybeSingle();
+  if (data?.value) {
+    localStorage.setItem("gemini_key", data.value);
+    return data.value;
+  }
+  return null;
+}
+
+async function saveGeminiKey(key) {
+  localStorage.setItem("gemini_key", key);
+  db.from("settings").upsert({ key: "gemini_key", value: key }).then(dbErr("saveGeminiKey"));
+}
+
+async function clearGeminiKey() {
+  localStorage.removeItem("gemini_key");
+  db.from("settings").delete().eq("key", "gemini_key").then(dbErr("clearGeminiKey"));
+}
+
+geminiKeySave.addEventListener("click", async () => {
   const key = geminiKeyInput.value.trim();
   if (!key) return;
-  localStorage.setItem("gemini_key", key);
+  await saveGeminiKey(key);
   geminiKeyForm.style.display = "none";
   geminiKeyInput.value = "";
   runSuggest(key);
 });
 
-suggestBtn.addEventListener("click", () => {
-  const key = localStorage.getItem("gemini_key");
+suggestBtn.addEventListener("click", async () => {
+  const key = await loadGeminiKey();
   if (!key) {
     geminiKeyForm.style.display = "flex";
     geminiKeyInput.focus();
@@ -640,7 +661,7 @@ Suggest 3 simple recipes I can make. For each recipe include: name, ingredients 
       if (data.error?.code === 429) {
         suggestResult.textContent = "⚠️ Quota exceeded on this API key. Try another key from aistudio.google.com.";
       } else if (data.error?.code === 400 || data.error?.code === 401 || data.error?.code === 403) {
-        localStorage.removeItem("gemini_key");
+        clearGeminiKey();
         suggestResult.textContent = "❌ Invalid API key — cleared. Click the button again to enter a new one.";
       } else {
         suggestResult.textContent = `⚠️ Error: ${errMsg || "No response from Gemini."}`;
