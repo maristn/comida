@@ -406,7 +406,12 @@ function addItem(name, qty = "") {
 
   const existing = findMatchingItem(trimmedName, items);
   if (existing) {
-    if (existing.status === "toBuy") {
+    if (existing.status === "inPantry") {
+      existing.status = "toBuy";
+      if (trimmedQty) existing.qty = trimmedQty;
+      render();
+      db.from("items").update({ status: "toBuy", qty: existing.qty }).eq("id", existing.id).then(dbErr("addItem:fromPantry"));
+    } else {
       const merged = sumQty(existing.qty, trimmedQty);
       if (merged) {
         existing.qty = merged;
