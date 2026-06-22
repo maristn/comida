@@ -64,27 +64,30 @@ const EMOJI_MAP = [
   [/\bpotato|batata/,     "🥔"],
   [/\bcarrot|cenoura/,    "🥕"],
   [/\brice\b|arroz/,      "🍚"],
-  [/\bpasta\b|macarrão/,  "🍝"],
+  [/\bpasta\b|macarrão|spaghetti|fusilli/, "🍝"],
+  [/noodle|ramen/,        "🍜"],
   [/\bchicken\b|frango/,  "🍗"],
   [/\bbeef\b|carne\b/,    "🥩"],
   [/\bfish\b|peixe/,      "🐟"],
   [/\bcheese\b|queijo|käse|kase/, "🧀"],
   [/\bcream\b/,           "🥛"],
-  [/\bchocolat/,          "🍫"],
+  [/\bchocolat|cacao|cacau/, "🍫"],
+  [/breadcrumb/,          "🌾"],
   [/\bbread\b|pão/,       "🍞"],
   [/\bapple\b|maçã/,      "🍎"],
   [/\bbanana/,            "🍌"],
   [/\blemon\b|limão/,     "🍋"],
   [/\borange\b|laranja/,  "🍊"],
+  [/sriracha/,            "🌶️"],
   [/\bpepper\b|pimenta/,  "🌶️"],
-  [/\bbean\b|feijão/,     "🫘"],
+  [/\bbeans?\b|feijão|chickpea|grão.de.bico|carioca/, "🫘"],
   [/\bcoffee\b|café/,     "☕"],
   [/\btea\b|chá\b/,       "🍵"],
   [/\bhoney\b|mel\b/,     "🍯"],
   [/\bcondensed/,         "🥫"],
   [/\bvanilla\b/,         "🌿"],
   [/\bcinnamon\b|canela/,  "🍂"],
-  [/\bcorn\b|milho/,      "🌽"],
+  [/\bcorn/,              "🌽"],
   [/\bmushroom\b|cogumelo/, "🍄"],
   [/\bavocado\b|abacate/,  "🥑"],
   [/\bcoconut\b|coco\b/,   "🥥"],
@@ -96,11 +99,35 @@ const EMOJI_MAP = [
   [/\bpancake/,           "🥞"],
   [/\bpudim|pudding/,     "🍮"],
   [/\byogurt|iogurte/,    "🫙"],
+  [/broth|caldo/,         "🍜"],
+  [/\bmiso\b/,            "🫙"],
   [/\bsauce\b|molho/,     "🫙"],
   [/mayo|maionese|mayonnaise/, "🫙"],
   [/turmeric|açafrão.da.terra/, "🧂"],
-  [/\bcumin\b|cominho/,  "🧂"],
+  [/\bcumin\b|cominho/,   "🧂"],
   [/ras.?el.?hanout|harissa|za.?atar|sumac|paprik/, "🧂"],
+  [/\bice\b/,             "🧊"],
+  [/vinegar|vinagre/,     "🍶"],
+  [/\baloe\b/,            "🫙"],
+  [/\bchia\b/,            "🌾"],
+  [/cilantro/,            "🧂"],
+  [/coriand/,             "🌿"],
+  [/\bdill\b/,            "🧂"],
+  [/\bjam\b|geleia/,      "🫙"],
+  [/flax/,                "🌱"],
+  [/mustard|mostarda/,    "🫙"],
+  [/\boat\b|aveia/,       "🌾"],
+  [/passion.fruit|maracujá/, "🍹"],
+  [/paçoca/,              "🍬"],
+  [/polvilho/,            "🌾"],
+  [/popcorn|pipoca/,      "🍿"],
+  [/quinoa/,              "🌾"],
+  [/tahini/,              "🧂"],
+  [/tamarind/,            "🫙"],
+  [/tapioca/,             "🫙"],
+  [/\btofu\b/,            "⬜"],
+  [/couscous/,            "🍚"],
+  [/leibniz|biscoito/,    "🍪"],
 ];
 
 function getIngredientEmoji(name) {
@@ -586,6 +613,7 @@ if ("serviceWorker" in navigator && location.hostname !== "localhost") {
 // ── AI recipe suggestions ──────────────────────────────────────────────────
 
 const suggestBtn      = document.getElementById("suggest-btn");
+const suggestQuery    = document.getElementById("suggest-query");
 const suggestResult   = document.getElementById("suggest-result");
 const geminiKeyForm   = document.getElementById("gemini-key-form");
 const geminiKeyInput  = document.getElementById("gemini-key-input");
@@ -659,8 +687,10 @@ async function runSuggest(geminiKey) {
     .map(i => i.qty ? `${i.qty} ${i.name}` : i.name)
     .join(", ");
 
+  const query = suggestQuery.value.trim();
+  const focus = query ? `${query} ` : "";
   const userPrompt = `I have these ingredients in my pantry: ${ingredientList}.
-Suggest 3 simple recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
+Suggest 3 simple ${focus}recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
 
   const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
