@@ -166,7 +166,10 @@ authForm.addEventListener("submit", async e => {
 });
 
 logoutBtn.addEventListener("click", async () => {
-  if (confirm("Sign out?")) await db.auth.signOut();
+  if (confirm("Sign out?")) {
+    await db.auth.signOut();
+    window.location.reload();
+  }
 });
 
 db.auth.onAuthStateChange(async (_event, session) => {
