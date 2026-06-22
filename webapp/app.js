@@ -166,7 +166,7 @@ authForm.addEventListener("submit", async e => {
 });
 
 logoutBtn.addEventListener("click", async () => {
-  await db.auth.signOut();
+  if (confirm("Sign out?")) await db.auth.signOut();
 });
 
 db.auth.onAuthStateChange(async (_event, session) => {
@@ -643,6 +643,7 @@ addRecipeForm.addEventListener("submit", e => {
 
 tabButtons.forEach(btn => {
   btn.addEventListener("click", () => {
+    if (btn.id === "logout-btn") return;
     const tab = btn.dataset.tab;
     tabButtons.forEach(b => b.classList.toggle("active", b === btn));
     pages.forEach(p => p.classList.toggle("active", p.id === `${tab}-page`));
