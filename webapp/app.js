@@ -438,7 +438,8 @@ function renderRecipes() {
       nameEl.textContent = recipe.name;
 
       const badge = document.createElement("span");
-      badge.className = "recipe-badge " + (missing.length === 0 ? "ready" : "missing");
+      const badgeClass = missing.length === 0 ? "ready" : missing.length <= 3 ? "missing-few" : "missing-many";
+      badge.className = "recipe-badge " + badgeClass;
       badge.textContent = missing.length === 0 ? "✓" : `${missing.length} missing`;
 
       const chevron = document.createElement("span");

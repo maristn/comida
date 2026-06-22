@@ -323,8 +323,9 @@ body {
   border-radius: 999px;
   flex-shrink: 0;
 }
-.recipe-badge.ready   { color: #fff; background: var(--green-dark); }
-.recipe-badge.missing { color: var(--text-muted); background: var(--bg); }
+.recipe-badge.ready        { color: #fff; background: var(--green-dark); }
+.recipe-badge.missing-few  { color: #7a5500; background: #ffe066; }
+.recipe-badge.missing-many { color: #fff; background: #e05252; }
 
 .recipe-chevron { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
 
