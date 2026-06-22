@@ -657,7 +657,7 @@ async function runSuggest(geminiKey) {
   const userPrompt = `I have these ingredients in my pantry: ${ingredientList}.
 Suggest 3 simple recipes I can make. For each recipe include: name, ingredients needed, and brief step-by-step instructions. Be concise.`;
 
-  const models = ["gemini-2.5-flash", "gemini-1.5-flash"];
+  const models = ["gemini-2.5-flash", "gemini-2.0-flash"];
 
   try {
     let text = null;
