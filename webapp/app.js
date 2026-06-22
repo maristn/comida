@@ -864,7 +864,10 @@ async function callGemini(geminiKey, model, prompt) {
     {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }),
+      body:    JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
+      }),
     }
   );
   return res.json();
@@ -896,11 +899,12 @@ Suggest 3 simple ${focus}recipes I can make. For each recipe include: name, ingr
   try {
     let text = null;
     let lastError = "";
+    let lastData = null;
 
     for (const model of models) {
       const data = await callGemini(geminiKey, model, userPrompt);
       text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (text) break;
+      if (text) { lastData = data; break; }
 
       const code = data.error?.code;
       lastError  = data.error?.message || "";
@@ -914,8 +918,42 @@ Suggest 3 simple ${focus}recipes I can make. For each recipe include: name, ingr
       // 429 (quota) or 503 (overload) → try next model
     }
 
-    suggestResult.textContent   = text || `⚠️ Error: ${lastError || "No response from Gemini."}`;
+    if (!text) {
+      suggestResult.textContent   = `⚠️ Error: ${lastError || "No response from Gemini."}`;
+      suggestResult.style.display = "block";
+      return;
+    }
+
+    suggestResult.innerHTML = "";
     suggestResult.style.display = "block";
+
+    const textEl = document.createElement("p");
+    textEl.style.whiteSpace = "pre-wrap";
+    textEl.style.margin = "0";
+    textEl.textContent = text;
+    suggestResult.appendChild(textEl);
+
+    // Show grounding sources if available
+    const chunks = lastData?.candidates?.[0]?.groundingMetadata?.groundingChunks || [];
+    const sources = chunks.map(c => c.web).filter(Boolean);
+    if (sources.length) {
+      const sourcesEl = document.createElement("div");
+      sourcesEl.className = "suggest-sources";
+      const label = document.createElement("p");
+      label.className = "suggest-sources-label";
+      label.textContent = "Sources";
+      sourcesEl.appendChild(label);
+      sources.forEach(({ uri, title }) => {
+        const a = document.createElement("a");
+        a.href = uri;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "suggest-source-link";
+        a.textContent = title || uri;
+        sourcesEl.appendChild(a);
+      });
+      suggestResult.appendChild(sourcesEl);
+    }
   } catch {
     suggestResult.textContent   = "Failed to reach Gemini. Check your connection.";
     suggestResult.style.display = "block";
