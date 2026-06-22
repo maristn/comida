@@ -232,6 +232,7 @@ const recipeEmojiInput        = document.getElementById("recipe-emoji-input");
 attachEmojiPicker(recipeEmojiInput);
 const recipeIngredientsInput  = document.getElementById("recipe-ingredients-input");
 const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
+const recipeSourceInput       = document.getElementById("recipe-source-input");
 const tabButtons              = document.querySelectorAll(".tab-button");
 const pages                   = document.querySelectorAll(".page");
 
@@ -457,6 +458,16 @@ function renderRecipes() {
           detail.appendChild(instrEl);
         }
 
+        if (recipe.source_url && recipe.source_url.trim()) {
+          const sourceLink = document.createElement("a");
+          sourceLink.href = recipe.source_url.trim();
+          sourceLink.target = "_blank";
+          sourceLink.rel = "noopener noreferrer";
+          sourceLink.className = "recipe-source-link";
+          sourceLink.textContent = "🔗 Source";
+          detail.appendChild(sourceLink);
+        }
+
         const actions = document.createElement("div");
         actions.className = "recipe-actions";
 
@@ -549,6 +560,12 @@ function buildRecipeEditForm(recipe) {
   instrTextarea.placeholder = "Instructions (optional)";
   instrTextarea.rows = 4;
 
+  const sourceInput = document.createElement("input");
+  sourceInput.type = "url";
+  sourceInput.value = recipe.source_url || "";
+  sourceInput.className = "recipe-edit-field";
+  sourceInput.placeholder = "Source URL (optional)";
+
   const actions = document.createElement("div");
   actions.className = "recipe-edit-actions";
 
@@ -566,7 +583,7 @@ function buildRecipeEditForm(recipe) {
   saveBtn.className = "recipe-save-button";
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", () => {
-    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value, categorySelect.value, emojiInput.value);
+    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value, categorySelect.value, emojiInput.value, sourceInput.value);
     editingRecipeId = null;
     renderRecipes();
   });
@@ -576,7 +593,7 @@ function buildRecipeEditForm(recipe) {
   formRow.append(categorySelect, emojiInput);
 
   actions.append(cancelBtn, saveBtn);
-  wrapper.append(nameInput, formRow, ingTextarea, instrTextarea, actions);
+  wrapper.append(nameInput, formRow, ingTextarea, instrTextarea, sourceInput, actions);
   return wrapper;
 }
 
@@ -707,17 +724,17 @@ function cookRecipe(recipe) {
   );
 }
 
-function addRecipe(name, ingredientsText, instructions, category = "", emoji = "") {
+function addRecipe(name, ingredientsText, instructions, category = "", emoji = "", sourceUrl = "") {
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim() };
+  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim(), source_url: sourceUrl.trim() };
   recipes.unshift(newRecipe);
   renderRecipes();
   db.from("recipes").insert(newRecipe).then(dbErr("addRecipe"));
 }
 
-function updateRecipe(id, name, ingredientsText, instructions, category = "", emoji = "") {
+function updateRecipe(id, name, ingredientsText, instructions, category = "", emoji = "", sourceUrl = "") {
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
   const trimmedName = name.trim();
@@ -728,7 +745,8 @@ function updateRecipe(id, name, ingredientsText, instructions, category = "", em
   recipe.instructions = instructions.trim();
   recipe.category     = category;
   recipe.emoji        = emoji.trim();
-  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim() }).eq("id", id).then(dbErr("updateRecipe"));
+  recipe.source_url   = sourceUrl.trim();
+  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim(), source_url: sourceUrl.trim() }).eq("id", id).then(dbErr("updateRecipe"));
 }
 
 function startEditRecipe(id) {
@@ -762,12 +780,13 @@ addPantryForm.addEventListener("submit", e => {
 
 addRecipeForm.addEventListener("submit", e => {
   e.preventDefault();
-  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value, recipeEmojiInput.value);
+  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value, recipeEmojiInput.value, recipeSourceInput.value);
   recipeNameInput.value         = "";
   recipeCategoryInput.value     = "";
   recipeEmojiInput.value        = "";
   recipeIngredientsInput.value  = "";
   recipeInstructionsInput.value = "";
+  recipeSourceInput.value       = "";
   recipeNameInput.focus();
 });
 
