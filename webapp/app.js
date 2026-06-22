@@ -6,8 +6,28 @@ const db = createClient(
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNraHduZXlycG9wb2lqZnh4cnBzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTYxMzUsImV4cCI6MjA5NzI3MjEzNX0.Qt9jJ9ojrQmEukcs0szv_CpwlVxnd8o8ekQlYU-I3z4"
 );
 
+function showToast(msg, color = "#c0392b") {
+  let t = document.getElementById("db-toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "db-toast";
+    t.style.cssText = "position:fixed;bottom:80px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:8px;color:#fff;font-size:13px;font-weight:600;z-index:9999;max-width:90vw;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.3)";
+    document.body.appendChild(t);
+  }
+  t.style.background = color;
+  t.textContent = msg;
+  t.style.display = "block";
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = "none"; }, 5000);
+}
+
 function dbErr(label) {
-  return ({ error }) => { if (error) console.error(label, error); };
+  return ({ error }) => {
+    if (error) {
+      console.error(label, error);
+      showToast(`Save error (${label}): ${error.message}`);
+    }
+  };
 }
 
 // ── utils ──────────────────────────────────────────────────────────────────
