@@ -76,6 +76,7 @@ const EMOJI_MAP = [
   [/\bbutter\b|manteig/,  "🧈"],
   [/\bsugar\b|açúcar|acucar/, "🍬"],
   [/\bsalt\b|sal\b/,      "🧂"],
+  [/\bpowder\b|em pó/,   "🧂"],
   [/olive/,               "🫒"],
   [/\boil\b|óleo|azeite/, "🫙"],
   [/\bonions?\b|cebola/,  "🧅"],
