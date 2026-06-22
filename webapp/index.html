@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&display=swap" rel="stylesheet" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=2" />
 </head>
 <body>
   <main class="app-main">
@@ -42,6 +42,13 @@
         <h2>New Recipe</h2>
         <form id="add-recipe-form" class="recipe-form">
           <input id="recipe-name-input" type="text" placeholder="Recipe name" autocomplete="off" />
+          <select id="recipe-category-input" class="recipe-edit-field">
+            <option value="">No category</option>
+            <option value="breakfast">🍳 Breakfast</option>
+            <option value="meal">🍽️ Meal</option>
+            <option value="snack">🥨 Snack</option>
+            <option value="dessert">🍰 Dessert</option>
+          </select>
           <textarea id="recipe-ingredients-input" placeholder="Ingredients, one per line" rows="4"></textarea>
           <textarea id="recipe-instructions-input" placeholder="Instructions (optional)" rows="4"></textarea>
           <button type="submit" class="recipe-save-button">Save Recipe</button>
@@ -61,7 +68,7 @@
 
       <div class="list-section">
         <h2>Recipes</h2>
-        <ul id="recipes-list" class="item-list recipe-list"></ul>
+        <div id="recipes-list"></div>
         <p id="recipes-empty" class="empty-state">No recipes yet</p>
       </div>
     </section>

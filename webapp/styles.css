@@ -256,105 +256,84 @@ body {
 .tab-button.active { color: var(--green-dark); }
 .tab-button.active .tab-icon { filter: none; }
 
-/* ── Recipe list ─────────────────────────────────────────────────────── */
+/* ── Recipe sections ─────────────────────────────────────────────────── */
 
-.item-list {
+.recipe-section { margin-bottom: 20px; }
+
+.recipe-section-heading {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin: 0 4px 8px;
+}
+
+.recipe-list {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
-.item-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+/* ── Compact recipe card ─────────────────────────────────────────────── */
+
+.recipe-compact-card {
   background: var(--bg-elevated);
   border-radius: var(--radius-card);
-  padding: 14px 16px;
   box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  overflow: hidden;
 }
 
-.item-row .delete {
-  background: transparent;
-  border: none;
-  color: #ccc;
-  font-size: 20px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 4px 6px;
-  flex-shrink: 0;
-}
-
-.item-row .delete:hover { color: var(--danger); }
-
-/* ── Recipe card specifics ───────────────────────────────────────────── */
-
-.recipe-card {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-}
-
-.recipe-card-header {
+.recipe-compact-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  padding: 13px 16px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.recipe-card .name {
-  flex: 1;
-  font-size: 16px;
-  font-weight: 700;
-}
+.recipe-compact-header:active { background: var(--bg); }
 
-.recipe-status {
+.recipe-cat-emoji { font-size: 22px; flex-shrink: 0; }
+
+.recipe-compact-name { flex: 1; font-size: 15px; font-weight: 600; }
+
+.recipe-badge {
   font-size: 11px;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 3px 9px;
   border-radius: 999px;
-  white-space: nowrap;
   flex-shrink: 0;
 }
+.recipe-badge.ready   { color: #fff; background: var(--green-dark); }
+.recipe-badge.missing { color: var(--text-muted); background: var(--bg); }
 
-.recipe-status.ready   { color: #fff; background: var(--green-dark); }
-.recipe-status.missing { color: var(--text-muted); background: var(--bg); }
+.recipe-chevron { font-size: 13px; color: var(--text-muted); flex-shrink: 0; }
 
-.recipe-edit-btn {
-  background: none;
-  border: none;
-  font-size: 15px;
-  cursor: pointer;
-  padding: 2px 4px;
-  flex-shrink: 0;
-  opacity: 0.6;
+/* ── Expanded detail ─────────────────────────────────────────────────── */
+
+.recipe-detail {
+  padding: 0 16px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-top: 1px solid var(--bg);
 }
 
-.recipe-edit-btn:hover { opacity: 1; }
-
-.recipe-card .ingredients {
+.recipe-detail .ingredients {
   margin: 0;
   padding-left: 18px;
   font-size: 14px;
   line-height: 1.7;
 }
 
-.recipe-card .ingredients li.have    { color: var(--text); }
-.recipe-card .ingredients li.missing { color: var(--danger); }
-
-.instructions-toggle {
-  background: none;
-  border: none;
-  color: var(--green-mid);
-  font-size: 13px;
-  font-weight: 600;
-  font-family: inherit;
-  cursor: pointer;
-  padding: 2px 0;
-  text-align: left;
-}
+.recipe-detail .ingredients li.have    { color: var(--text); }
+.recipe-detail .ingredients li.missing { color: var(--danger); }
 
 .instructions-text {
   margin: 0;
@@ -364,8 +343,14 @@ body {
   white-space: pre-wrap;
 }
 
+.recipe-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .add-missing-button {
-  align-self: flex-start;
   border: 1.5px solid var(--green-dark);
   border-radius: 10px;
   padding: 7px 14px;
@@ -380,7 +365,6 @@ body {
 .add-missing-button:active { transform: scale(0.97); }
 
 .cook-button {
-  align-self: flex-start;
   border: none;
   border-radius: 10px;
   padding: 7px 16px;
@@ -395,6 +379,31 @@ body {
 
 .cook-button:active { transform: scale(0.97); }
 
+.recipe-edit-btn {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+.recipe-actions .delete {
+  background: transparent;
+  border: none;
+  color: #ccc;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 4px 6px;
+  margin-left: auto;
+}
+
+.recipe-actions .delete:active { color: var(--danger); }
+
 /* ── Recipe forms ────────────────────────────────────────────────────── */
 
 .recipe-form, .recipe-edit-wrapper {
@@ -408,6 +417,7 @@ body {
 }
 
 .recipe-form input,
+.recipe-form select,
 .recipe-form textarea,
 .recipe-edit-field {
   border: none;

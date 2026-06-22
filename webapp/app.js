@@ -143,7 +143,15 @@ function getIngredientEmoji(name) {
 let items   = [];
 let recipes = [];
 let editingRecipeId = null;
-const expandedInstructionIds = new Set();
+const expandedRecipeIds = new Set();
+
+const CATEGORIES = [
+  { key: "breakfast", label: "Breakfast", emoji: "🍳" },
+  { key: "meal",      label: "Meal",      emoji: "🍽️" },
+  { key: "snack",     label: "Snack",     emoji: "🥨" },
+  { key: "dessert",   label: "Dessert",   emoji: "🍰" },
+  { key: "",          label: "Other",     emoji: "📋" },
+];
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
 
@@ -159,6 +167,7 @@ const recipesList             = document.getElementById("recipes-list");
 const recipesEmpty            = document.getElementById("recipes-empty");
 const addRecipeForm           = document.getElementById("add-recipe-form");
 const recipeNameInput         = document.getElementById("recipe-name-input");
+const recipeCategoryInput     = document.getElementById("recipe-category-input");
 const recipeIngredientsInput  = document.getElementById("recipe-ingredients-input");
 const recipeInstructionsInput = document.getElementById("recipe-instructions-input");
 const tabButtons              = document.querySelectorAll(".tab-button");
@@ -259,102 +268,131 @@ function renderRecipes() {
     );
     return { recipe, missing };
   });
-  withStatus.sort((a, b) => a.missing.length - b.missing.length);
 
   recipesList.innerHTML = "";
 
-  for (const { recipe, missing } of withStatus) {
-    const li = document.createElement("li");
-    li.className = "item-row recipe-card";
+  for (const { key, label, emoji } of CATEGORIES) {
+    const group = withStatus
+      .filter(({ recipe }) => (recipe.category || "") === key)
+      .sort((a, b) => a.missing.length - b.missing.length);
 
-    if (editingRecipeId === recipe.id) {
-      li.appendChild(buildRecipeEditForm(recipe));
-      recipesList.appendChild(li);
-      continue;
-    }
+    if (!group.length) continue;
 
-    // Header row
-    const header = document.createElement("div");
-    header.className = "recipe-card-header";
+    const section = document.createElement("div");
+    section.className = "recipe-section";
 
-    const name = document.createElement("span");
-    name.className = "name";
-    name.textContent = recipe.name;
+    const heading = document.createElement("h3");
+    heading.className = "recipe-section-heading";
+    heading.textContent = `${emoji} ${label}`;
+    section.appendChild(heading);
 
-    const status = document.createElement("span");
-    status.className = "recipe-status " + (missing.length === 0 ? "ready" : "missing");
-    status.textContent = missing.length === 0 ? "Ready to cook" : `${missing.length} missing`;
+    const ul = document.createElement("ul");
+    ul.className = "recipe-list";
 
-    const editBtn = document.createElement("button");
-    editBtn.className = "recipe-edit-btn";
-    editBtn.type = "button";
-    editBtn.textContent = "✏️";
-    editBtn.setAttribute("aria-label", "Edit recipe");
-    editBtn.addEventListener("click", () => startEditRecipe(recipe.id));
+    for (const { recipe, missing } of group) {
+      const li = document.createElement("li");
+      li.className = "recipe-compact-card";
 
-    const del = document.createElement("button");
-    del.className = "delete";
-    del.type = "button";
-    del.textContent = "×";
-    del.addEventListener("click", () => deleteRecipe(recipe.id));
+      if (editingRecipeId === recipe.id) {
+        li.appendChild(buildRecipeEditForm(recipe));
+        ul.appendChild(li);
+        continue;
+      }
 
-    header.append(name, status, editBtn, del);
-
-    // Ingredients list
-    const ingredients = document.createElement("ul");
-    ingredients.className = "ingredients";
-    for (const ing of recipe.ingredients) {
-      const ingEl = document.createElement("li");
-      ingEl.textContent = ing;
-      ingEl.className = (isIgnoredIngredient(ing) || ingredientInPantry(ing, pantryItems)) ? "have" : "missing";
-      ingredients.appendChild(ingEl);
-    }
-
-    li.append(header, ingredients);
-
-    // Instructions toggle
-    if (recipe.instructions && recipe.instructions.trim()) {
-      const expanded = expandedInstructionIds.has(recipe.id);
-      const toggle = document.createElement("button");
-      toggle.type = "button";
-      toggle.className = "instructions-toggle";
-      toggle.textContent = expanded ? "▾ Instructions" : "▸ Instructions";
-      toggle.addEventListener("click", () => {
-        if (expandedInstructionIds.has(recipe.id)) {
-          expandedInstructionIds.delete(recipe.id);
+      // Compact header (always visible)
+      const header = document.createElement("div");
+      header.className = "recipe-compact-header";
+      header.addEventListener("click", () => {
+        if (expandedRecipeIds.has(recipe.id)) {
+          expandedRecipeIds.delete(recipe.id);
         } else {
-          expandedInstructionIds.add(recipe.id);
+          expandedRecipeIds.add(recipe.id);
         }
         renderRecipes();
       });
-      li.appendChild(toggle);
 
-      if (expanded) {
-        const instr = document.createElement("p");
-        instr.className = "instructions-text";
-        instr.textContent = recipe.instructions;
-        li.appendChild(instr);
+      const catEmoji = document.createElement("span");
+      catEmoji.className = "recipe-cat-emoji";
+      catEmoji.textContent = emoji;
+
+      const nameEl = document.createElement("span");
+      nameEl.className = "recipe-compact-name";
+      nameEl.textContent = recipe.name;
+
+      const badge = document.createElement("span");
+      badge.className = "recipe-badge " + (missing.length === 0 ? "ready" : "missing");
+      badge.textContent = missing.length === 0 ? "✓" : String(missing.length);
+
+      const chevron = document.createElement("span");
+      chevron.className = "recipe-chevron";
+      chevron.textContent = expandedRecipeIds.has(recipe.id) ? "▾" : "▸";
+
+      header.append(catEmoji, nameEl, badge, chevron);
+      li.appendChild(header);
+
+      // Expanded detail
+      if (expandedRecipeIds.has(recipe.id)) {
+        const detail = document.createElement("div");
+        detail.className = "recipe-detail";
+
+        const ings = document.createElement("ul");
+        ings.className = "ingredients";
+        for (const ing of recipe.ingredients) {
+          const ingEl = document.createElement("li");
+          ingEl.textContent = ing;
+          ingEl.className = (isIgnoredIngredient(ing) || ingredientInPantry(ing, pantryItems)) ? "have" : "missing";
+          ings.appendChild(ingEl);
+        }
+        detail.appendChild(ings);
+
+        if (recipe.instructions && recipe.instructions.trim()) {
+          const instr = document.createElement("p");
+          instr.className = "instructions-text";
+          instr.textContent = recipe.instructions;
+          detail.appendChild(instr);
+        }
+
+        const actions = document.createElement("div");
+        actions.className = "recipe-actions";
+
+        if (missing.length > 0) {
+          const addBtn = document.createElement("button");
+          addBtn.type = "button";
+          addBtn.className = "add-missing-button";
+          addBtn.textContent = "Add missing to list";
+          addBtn.addEventListener("click", () => addMissingToList(missing));
+          actions.appendChild(addBtn);
+        } else {
+          const cookBtn = document.createElement("button");
+          cookBtn.type = "button";
+          cookBtn.className = "cook-button";
+          cookBtn.textContent = "Cooked!";
+          cookBtn.addEventListener("click", () => cookRecipe(recipe));
+          actions.appendChild(cookBtn);
+        }
+
+        const editBtn = document.createElement("button");
+        editBtn.type = "button";
+        editBtn.className = "recipe-edit-btn";
+        editBtn.textContent = "✏️ Edit";
+        editBtn.addEventListener("click", e => { e.stopPropagation(); startEditRecipe(recipe.id); });
+
+        const delBtn = document.createElement("button");
+        delBtn.type = "button";
+        delBtn.className = "delete";
+        delBtn.textContent = "Delete";
+        delBtn.addEventListener("click", e => { e.stopPropagation(); deleteRecipe(recipe.id); });
+
+        actions.append(editBtn, delBtn);
+        detail.appendChild(actions);
+        li.appendChild(detail);
       }
+
+      ul.appendChild(li);
     }
 
-    // Action buttons
-    if (missing.length > 0) {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "add-missing-button";
-      btn.textContent = "Add missing to shopping list";
-      btn.addEventListener("click", () => addMissingToList(missing));
-      li.append(btn);
-    } else {
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "cook-button";
-      btn.textContent = "Cooked!";
-      btn.addEventListener("click", () => cookRecipe(recipe));
-      li.append(btn);
-    }
-
-    recipesList.appendChild(li);
+    section.appendChild(ul);
+    recipesList.appendChild(section);
   }
 
   recipesEmpty.style.display = recipes.length ? "none" : "block";
@@ -369,6 +407,22 @@ function buildRecipeEditForm(recipe) {
   nameInput.value = recipe.name;
   nameInput.className = "recipe-edit-field";
   nameInput.placeholder = "Recipe name";
+
+  const categorySelect = document.createElement("select");
+  categorySelect.className = "recipe-edit-field";
+  for (const { key, label, emoji } of CATEGORIES) {
+    if (key === "" && label === "Other") continue;
+    const opt = document.createElement("option");
+    opt.value = key;
+    opt.textContent = `${emoji} ${label}`;
+    if ((recipe.category || "") === key) opt.selected = true;
+    categorySelect.appendChild(opt);
+  }
+  const noneOpt = document.createElement("option");
+  noneOpt.value = "";
+  noneOpt.textContent = "No category";
+  if (!recipe.category) noneOpt.selected = true;
+  categorySelect.insertBefore(noneOpt, categorySelect.firstChild);
 
   const ingTextarea = document.createElement("textarea");
   ingTextarea.value = recipe.ingredients.join("\n");
@@ -399,13 +453,13 @@ function buildRecipeEditForm(recipe) {
   saveBtn.className = "recipe-save-button";
   saveBtn.textContent = "Save";
   saveBtn.addEventListener("click", () => {
-    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value);
+    updateRecipe(recipe.id, nameInput.value, ingTextarea.value, instrTextarea.value, categorySelect.value);
     editingRecipeId = null;
     renderRecipes();
   });
 
   actions.append(cancelBtn, saveBtn);
-  wrapper.append(nameInput, ingTextarea, instrTextarea, actions);
+  wrapper.append(nameInput, categorySelect, ingTextarea, instrTextarea, actions);
   return wrapper;
 }
 
@@ -536,17 +590,17 @@ function cookRecipe(recipe) {
   );
 }
 
-function addRecipe(name, ingredientsText, instructions) {
+function addRecipe(name, ingredientsText, instructions, category = "") {
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim() };
+  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category };
   recipes.unshift(newRecipe);
   renderRecipes();
   db.from("recipes").insert(newRecipe).then(dbErr("addRecipe"));
 }
 
-function updateRecipe(id, name, ingredientsText, instructions) {
+function updateRecipe(id, name, ingredientsText, instructions, category = "") {
   const recipe = recipes.find(r => r.id === id);
   if (!recipe) return;
   const trimmedName = name.trim();
@@ -555,7 +609,8 @@ function updateRecipe(id, name, ingredientsText, instructions) {
   recipe.name         = trimmedName;
   recipe.ingredients  = ingredients;
   recipe.instructions = instructions.trim();
-  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim() }).eq("id", id).then(dbErr("updateRecipe"));
+  recipe.category     = category;
+  db.from("recipes").update({ name: trimmedName, ingredients, instructions: instructions.trim(), category }).eq("id", id).then(dbErr("updateRecipe"));
 }
 
 function startEditRecipe(id) {
@@ -589,8 +644,9 @@ addPantryForm.addEventListener("submit", e => {
 
 addRecipeForm.addEventListener("submit", e => {
   e.preventDefault();
-  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value);
+  addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value);
   recipeNameInput.value         = "";
+  recipeCategoryInput.value     = "";
   recipeIngredientsInput.value  = "";
   recipeInstructionsInput.value = "";
   recipeNameInput.focus();
