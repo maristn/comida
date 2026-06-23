@@ -226,6 +226,7 @@ const newPantryInput          = document.getElementById("new-pantry-input");
 const recipesList             = document.getElementById("recipes-list");
 const recipesEmpty            = document.getElementById("recipes-empty");
 const addRecipeForm           = document.getElementById("add-recipe-form");
+const toggleRecipeFormBtn     = document.getElementById("toggle-recipe-form-btn");
 const recipeNameInput         = document.getElementById("recipe-name-input");
 const recipeCategoryInput     = document.getElementById("recipe-category-input");
 const recipeEmojiInput        = document.getElementById("recipe-emoji-input");
@@ -798,6 +799,13 @@ addPantryForm.addEventListener("submit", e => {
   newPantryInput.focus();
 });
 
+toggleRecipeFormBtn.addEventListener("click", () => {
+  const open = addRecipeForm.style.display !== "none";
+  addRecipeForm.style.display = open ? "none" : "flex";
+  toggleRecipeFormBtn.textContent = open ? "+ New Recipe" : "✕ Cancel";
+  if (!open) recipeNameInput.focus();
+});
+
 addRecipeForm.addEventListener("submit", e => {
   e.preventDefault();
   addRecipe(recipeNameInput.value, recipeIngredientsInput.value, recipeInstructionsInput.value, recipeCategoryInput.value, recipeEmojiInput.value, recipeSourceInput.value);
@@ -807,7 +815,8 @@ addRecipeForm.addEventListener("submit", e => {
   recipeIngredientsInput.value  = "";
   recipeInstructionsInput.value = "";
   recipeSourceInput.value       = "";
-  recipeNameInput.focus();
+  addRecipeForm.style.display   = "none";
+  toggleRecipeFormBtn.textContent = "+ New Recipe";
 });
 
 function switchTab(tab) {
