@@ -1104,14 +1104,14 @@ authForm.addEventListener("submit", async e => {
   e.preventDefault();
   const email = authEmail.value.trim();
   if (!email) return;
-  authMsg.textContent = "Enviando...";
+  authMsg.textContent = "Sending...";
   const { error } = await db.auth.signInWithOtp({
     email,
     options: { emailRedirectTo: window.location.href.split("#")[0] },
   });
   authMsg.textContent = error
-    ? "Erro: " + error.message
-    : "✉️ Link enviado! Verifique seu email (e a caixa de spam).";
+    ? "Error: " + error.message
+    : "✉️ Link sent! Check your email (and spam folder).";
 });
 
 signOutBtn.addEventListener("click", async () => {
