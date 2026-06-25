@@ -34,13 +34,26 @@ alter table settings enable row level security;
 -- ------------------------------------------------------------
 -- PASSO 5 — Regras de acesso
 -- ------------------------------------------------------------
+-- LIMPEZA: remover regras antigas "abertas" criadas pelo Table Editor.
+--   Elas tinham `using (true)` e VAZAVAM todos os dados pra qualquer
+--   usuário (as regras se somam com OU, então uma aberta fura as outras).
+--   Seguro: drop policy só apaga a regra de acesso, nunca os dados.
+drop policy if exists "Allow all" on items;
+drop policy if exists "Users manage own items" on items;
+drop policy if exists "Allow all" on recipes;
+drop policy if exists "All users can read/write recipes" on recipes;
+drop policy if exists "allow all" on settings;
+
 -- items: 100% privado do dono (lista de compras + despensa)
+drop policy if exists "items_own" on items;
 create policy "items_own" on items
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
 
 -- settings: chave do Gemini COMPARTILHADA — todo amigo logado LÊ a sua
 --           chave (pra usar o "Suggest"), mas só VOCÊ (o dono da linha)
 --           pode criar/editar/apagar.
+drop policy if exists "settings_read_all" on settings;
+drop policy if exists "settings_owner_write" on settings;
 create policy "settings_read_all" on settings
   for select using (auth.uid() is not null);
 create policy "settings_owner_write" on settings
@@ -48,6 +61,10 @@ create policy "settings_owner_write" on settings
 
 -- recipes: você lê as SUAS + as que qualquer amigo marcou como compartilhada;
 --          mas só pode criar/editar/apagar as suas.
+drop policy if exists "recipes_read" on recipes;
+drop policy if exists "recipes_insert" on recipes;
+drop policy if exists "recipes_update" on recipes;
+drop policy if exists "recipes_delete" on recipes;
 create policy "recipes_read" on recipes
   for select using (auth.uid() = user_id or is_shared = true);
 create policy "recipes_insert" on recipes
