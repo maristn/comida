@@ -87,8 +87,10 @@ const EMOJI_MAP = [
   [/\brice\b|arroz/,      "🍚"],
   [/\bpasta\b|macarrão|spaghetti|fusilli/, "🍝"],
   [/noodle|ramen/,        "🍜"],
-  [/\bchicken\b|frango/,  "🍗"],
-  [/\bbeef\b|carne\b/,    "🥩"],
+  [/\bchicken\b|frango/,       "🍗"],
+  [/beyond.meat|veggie.burger/, "🍔"],
+  [/\bwiener|sausage|salsicha/, "🌭"],
+  [/\bbeef\b|carne\b/,          "🥩"],
   [/\bfish\b|peixe/,      "🐟"],
   [/\bcheese\b|queijo|käse|kase/, "🧀"],
   [/\bcream\b/,           "🥛"],
@@ -132,7 +134,7 @@ const EMOJI_MAP = [
   [/\baloe\b/,            "🫙"],
   [/\bchia\b/,            "🌾"],
   [/cilantro/,            "🧂"],
-  [/coriand/,             "🌿"],
+  [/coriand|parsley|rosemary|bay.leaf/, "🌿"],
   [/\bdill\b/,            "🧂"],
   [/\bjam\b|geleia/,      "🫙"],
   [/flax/,                "🌱"],
@@ -288,7 +290,11 @@ function ingredientInPantry(ingText, pantryItems) {
 
 function findMatchingItem(name, searchItems) {
   const norm = normalize(name);
-  return searchItems.find(i => normalize(i.name) === norm) || null;
+  const s    = stem(norm);
+  return searchItems.find(i => {
+    const iNorm = normalize(i.name);
+    return iNorm === norm || stem(iNorm) === s;
+  }) || null;
 }
 
 // ── render ─────────────────────────────────────────────────────────────────
