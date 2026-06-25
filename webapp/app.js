@@ -1115,6 +1115,7 @@ authForm.addEventListener("submit", async e => {
 });
 
 signOutBtn.addEventListener("click", async () => {
+  if (!confirm("Sign out of Food?")) return;
   await db.auth.signOut();
   location.reload();
 });
