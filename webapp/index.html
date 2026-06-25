@@ -11,9 +11,22 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap" rel="stylesheet" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
-  <link rel="stylesheet" href="styles.css?v=2" />
+  <link rel="stylesheet" href="styles.css?v=3" />
 </head>
-<body>
+<body class="signed-out">
+  <section id="auth-screen" class="auth-screen">
+    <div class="auth-box">
+      <div class="auth-logo">🍳</div>
+      <h1>Food</h1>
+      <p class="auth-subtitle">Entre com seu email para acessar suas receitas, despensa e lista.</p>
+      <form id="auth-form" class="auth-form">
+        <input id="auth-email" type="email" placeholder="seu@email.com" autocomplete="email" required />
+        <button type="submit" class="recipe-save-button">Enviar link de acesso</button>
+      </form>
+      <p id="auth-msg" class="auth-msg"></p>
+    </div>
+  </section>
+
   <main class="app-main">
     <section id="shopping-page" class="page active">
       <div class="list-section">
@@ -86,6 +99,10 @@
     <button type="button" class="tab-button" data-tab="recipes">
       <span class="tab-icon">🍳</span>
       Recipes
+    </button>
+    <button type="button" class="tab-button" id="sign-out-btn">
+      <span class="tab-icon">🚪</span>
+      Sign out
     </button>
   </nav>
 

@@ -204,6 +204,7 @@ function getIngredientEmoji(name) {
 
 let items   = [];
 let recipes = [];
+let currentUser = null;
 let editingRecipeId = null;
 const expandedRecipeIds = new Set();
 
@@ -394,8 +395,32 @@ function renderRecipes() {
 
   recipesList.innerHTML = "";
 
+  const mine   = withStatus.filter(({ recipe }) => recipe.user_id === currentUser.id);
+  const shared = withStatus.filter(({ recipe }) => recipe.user_id !== currentUser.id);
+
+  if (mine.length) {
+    recipesList.appendChild(buildGroupHeading("🧑‍🍳 My Recipes"));
+    renderRecipeGroup(recipesList, mine);
+  }
+  if (shared.length) {
+    recipesList.appendChild(buildGroupHeading("👥 Shared Recipes"));
+    renderRecipeGroup(recipesList, shared);
+  }
+
+  recipesEmpty.style.display = recipes.length ? "none" : "block";
+}
+
+function buildGroupHeading(text) {
+  const h = document.createElement("h2");
+  h.className = "recipe-group-heading";
+  h.textContent = text;
+  return h;
+}
+
+function renderRecipeGroup(parent, entries) {
+  const pantryItems = getPantryItems();
   for (const { key, label, emoji } of CATEGORIES) {
-    const group = withStatus
+    const group = entries
       .filter(({ recipe }) => (recipe.category || "") === key)
       .sort((a, b) => a.missing.length - b.missing.length);
 
@@ -413,6 +438,7 @@ function renderRecipes() {
     ul.className = "recipe-list";
 
     for (const { recipe, missing } of group) {
+      const isOwner = recipe.user_id === currentUser.id;
       const li = document.createElement("li");
       li.className = "recipe-compact-card";
 
@@ -453,7 +479,19 @@ function renderRecipes() {
       chevron.className = "recipe-chevron";
       chevron.textContent = expandedRecipeIds.has(recipe.id) ? "▾" : "▸";
 
-      header.append(catEmoji, nameEl, badge, chevron);
+      header.append(catEmoji, nameEl);
+      if (!isOwner) {
+        const friendPill = document.createElement("span");
+        friendPill.className = "recipe-friend-pill";
+        friendPill.textContent = "👥 shared";
+        header.appendChild(friendPill);
+      } else if (recipe.is_shared) {
+        const sharedPill = document.createElement("span");
+        sharedPill.className = "recipe-shared-pill";
+        sharedPill.textContent = "🔗 shared";
+        header.appendChild(sharedPill);
+      }
+      header.append(badge, chevron);
       li.appendChild(header);
 
       // Expanded detail
@@ -514,19 +552,27 @@ function renderRecipes() {
           actions.appendChild(cookBtn);
         }
 
-        const editBtn = document.createElement("button");
-        editBtn.type = "button";
-        editBtn.className = "recipe-edit-btn";
-        editBtn.textContent = "✏️ Edit";
-        editBtn.addEventListener("click", e => { e.stopPropagation(); startEditRecipe(recipe.id); });
+        if (isOwner) {
+          const shareBtn = document.createElement("button");
+          shareBtn.type = "button";
+          shareBtn.className = "recipe-share-btn" + (recipe.is_shared ? " active" : "");
+          shareBtn.textContent = recipe.is_shared ? "🔗 Shared" : "🔒 Private";
+          shareBtn.addEventListener("click", e => { e.stopPropagation(); toggleShareRecipe(recipe.id); });
 
-        const delBtn = document.createElement("button");
-        delBtn.type = "button";
-        delBtn.className = "delete";
-        delBtn.textContent = "Delete";
-        delBtn.addEventListener("click", e => { e.stopPropagation(); deleteRecipe(recipe.id); });
+          const editBtn = document.createElement("button");
+          editBtn.type = "button";
+          editBtn.className = "recipe-edit-btn";
+          editBtn.textContent = "✏️ Edit";
+          editBtn.addEventListener("click", e => { e.stopPropagation(); startEditRecipe(recipe.id); });
 
-        actions.append(editBtn, delBtn);
+          const delBtn = document.createElement("button");
+          delBtn.type = "button";
+          delBtn.className = "delete";
+          delBtn.textContent = "Delete";
+          delBtn.addEventListener("click", e => { e.stopPropagation(); deleteRecipe(recipe.id); });
+
+          actions.append(shareBtn, editBtn, delBtn);
+        }
         detail.appendChild(actions);
         li.appendChild(detail);
       }
@@ -535,10 +581,8 @@ function renderRecipes() {
     }
 
     section.appendChild(ul);
-    recipesList.appendChild(section);
+    parent.appendChild(section);
   }
-
-  recipesEmpty.style.display = recipes.length ? "none" : "block";
 }
 
 function buildRecipeEditForm(recipe) {
@@ -663,7 +707,7 @@ function addItem(name, qty = "") {
     }
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy" };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "toBuy", user_id: currentUser.id };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addItem:insert"));
@@ -683,7 +727,7 @@ function addToPantry(name, qty = "") {
     db.from("items").update({ status: "inPantry", name: trimmedName, qty: trimmedQty }).eq("id", existing.id).then(dbErr("addToPantry:update"));
     return;
   }
-  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry" };
+  const newItem = { id: crypto.randomUUID(), name: trimmedName, qty: trimmedQty, status: "inPantry", user_id: currentUser.id };
   items.unshift(newItem);
   render();
   db.from("items").insert(newItem).then(dbErr("addToPantry:insert"));
@@ -708,7 +752,7 @@ function addMissingToList(missingIngredients) {
       }
       continue;
     }
-    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy" };
+    const newItem = { id: crypto.randomUUID(), name: ingName, qty: qtyStr, status: "toBuy", user_id: currentUser.id };
     items.unshift(newItem);
     toInsert.push(newItem);
   }
@@ -755,7 +799,7 @@ function addRecipe(name, ingredientsText, instructions, category = "", emoji = "
   const trimmedName = name.trim();
   const ingredients = ingredientsText.split("\n").map(l => l.trim()).filter(Boolean);
   if (!trimmedName || ingredients.length === 0) return;
-  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim(), source_url: sourceUrl.trim() };
+  const newRecipe = { id: crypto.randomUUID(), name: trimmedName, ingredients, instructions: instructions.trim(), category, emoji: emoji.trim(), source_url: sourceUrl.trim(), is_shared: false, user_id: currentUser.id };
   recipes.unshift(newRecipe);
   renderRecipes();
   db.from("recipes").insert(newRecipe).then(dbErr("addRecipe"));
@@ -785,6 +829,14 @@ function deleteRecipe(id) {
   recipes = recipes.filter(r => r.id !== id);
   renderRecipes();
   db.from("recipes").delete().eq("id", id).then(dbErr("deleteRecipe"));
+}
+
+function toggleShareRecipe(id) {
+  const recipe = recipes.find(r => r.id === id);
+  if (!recipe) return;
+  recipe.is_shared = !recipe.is_shared;
+  renderRecipes();
+  db.from("recipes").update({ is_shared: recipe.is_shared }).eq("id", id).then(dbErr("toggleShare"));
 }
 
 // ── event listeners ────────────────────────────────────────────────────────
@@ -866,7 +918,11 @@ async function loadGeminiKey() {
 
 async function saveGeminiKey(key) {
   localStorage.setItem("gemini_key", key);
-  db.from("settings").upsert({ key: "gemini_key", value: key }).then(dbErr("saveGeminiKey"));
+  // One shared key for everyone: a single row owned by you. RLS lets any
+  // logged-in friend read it, but only you can write it.
+  db.from("settings")
+    .upsert({ key: "gemini_key", value: key, user_id: currentUser.id })
+    .then(dbErr("saveGeminiKey"));
 }
 
 async function clearGeminiKey() {
@@ -1025,4 +1081,54 @@ async function init() {
   render();
 }
 
-init();
+// ── auth ─────────────────────────────────────────────────────────────────────
+
+const authForm   = document.getElementById("auth-form");
+const authEmail  = document.getElementById("auth-email");
+const authMsg    = document.getElementById("auth-msg");
+const signOutBtn = document.getElementById("sign-out-btn");
+
+let appLoaded = false;
+
+function showApp() {
+  document.body.classList.add("authed");
+  document.body.classList.remove("signed-out");
+}
+
+function showAuthScreen() {
+  document.body.classList.add("signed-out");
+  document.body.classList.remove("authed");
+}
+
+authForm.addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = authEmail.value.trim();
+  if (!email) return;
+  authMsg.textContent = "Enviando...";
+  const { error } = await db.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: window.location.href.split("#")[0] },
+  });
+  authMsg.textContent = error
+    ? "Erro: " + error.message
+    : "✉️ Link enviado! Verifique seu email (e a caixa de spam).";
+});
+
+signOutBtn.addEventListener("click", async () => {
+  await db.auth.signOut();
+  location.reload();
+});
+
+db.auth.onAuthStateChange((_event, session) => {
+  if (session?.user) {
+    currentUser = session.user;
+    showApp();
+    if (!appLoaded) {
+      appLoaded = true;
+      init();
+    }
+  } else {
+    currentUser = null;
+    showAuthScreen();
+  }
+});
